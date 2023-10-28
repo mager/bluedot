@@ -38,6 +38,11 @@ type GetDatasetResp struct {
 	Description string `json:"description"`
 	CreatedAt   string `json:"createdAt"`
 	UpdatedAt   string `json:"updatedAt"`
+
+	User struct {
+		Image string `json:"image"`
+		Slug  string `json:"slug"`
+	} `json:"user"`
 }
 
 // ServeHTTP handles an HTTP request to the /echo endpoint.
@@ -57,7 +62,7 @@ func (h *GetDataset) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Return the dataset object to the client
 	resp := &GetDatasetResp{}
-	mapResp(resp, dataset)
+	mapResp(resp, user, dataset)
 
 	// Return in JSON format
 	w.Header().Set("Content-Type", "application/json")
@@ -65,7 +70,7 @@ func (h *GetDataset) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func mapResp(resp *GetDatasetResp, dataset db.Dataset) {
+func mapResp(resp *GetDatasetResp, user db.User, dataset db.Dataset) {
 	resp.ID = dataset.ID
 	resp.UserID = dataset.UserID
 	resp.Name = dataset.Name
@@ -82,4 +87,6 @@ func mapResp(resp *GetDatasetResp, dataset db.Dataset) {
 		resp.UpdatedAt = dataset.Updated.Time.Format("2006-01-02 15:04:05")
 	}
 
+	resp.User.Image = user.Image
+	resp.User.Slug = user.Slug
 }
