@@ -2,6 +2,7 @@ package handler
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -30,14 +31,14 @@ func NewGetDataset(log *zap.SugaredLogger, sql *sql.DB) *GetDataset {
 }
 
 type GetDatasetResp struct {
-	ID          string
-	UserID      string
-	Name        string
-	Slug        string
-	Source      string
-	Description string
-	CreatedAt   string
-	UpdatedAt   string
+	ID          string `json:"id"`
+	UserID      string `json:"userId"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Source      string `json:"source"`
+	Description string `json:"description"`
+	CreatedAt   string `json:"createdAt"`
+	UpdatedAt   string `json:"updatedAt"`
 }
 
 // ServeHTTP handles an HTTP request to the /echo endpoint.
@@ -77,7 +78,10 @@ func (h *GetDataset) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		resp.UpdatedAt = dataset.Updated.Time.Format("2006-01-02 15:04:05")
 	}
 
-	// Return the dataset object to the client
-	fmt.Fprintf(w, "%+v", resp)
 	h.log.Infow("GetDataset", "dataset", resp)
+
+	// Return in JSON format
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(resp)
 }
