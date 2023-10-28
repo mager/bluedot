@@ -23,8 +23,6 @@ func GetDatasetByUserIdAndSlug(db *sql.DB, userID string, slug string) Dataset {
 	var dataset Dataset
 	queryString := fmt.Sprintf("SELECT id, \"userId\", name, slug, source, description, created, updated FROM \"Dataset\" WHERE \"userId\" = '%s' AND slug = '%s'", userID, slug)
 	row := db.QueryRow(queryString)
-	// Log the row to the console
-	fmt.Println(row)
 
 	err := row.Scan(
 		&dataset.ID,

@@ -3,7 +3,6 @@ package handler
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -45,8 +44,6 @@ type GetDatasetResp struct {
 func (h *GetDataset) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/datasets/")
 
-	// TODO: Handle all routes manually
-
 	// The URL will be /datasets/{username}/{datasetSlug}
 	split := strings.Split(id, "/")
 	username := split[0]
@@ -59,7 +56,16 @@ func (h *GetDataset) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	dataset := db.GetDatasetByUserIdAndSlug(h.sql, user.ID, datasetSlug)
 
 	// Return the dataset object to the client
-	var resp GetDatasetResp
+	resp := &GetDatasetResp{}
+	mapResp(resp, dataset)
+
+	// Return in JSON format
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(resp)
+}
+
+func mapResp(resp *GetDatasetResp, dataset db.Dataset) {
 	resp.ID = dataset.ID
 	resp.UserID = dataset.UserID
 	resp.Name = dataset.Name
@@ -70,18 +76,10 @@ func (h *GetDataset) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		resp.Description = dataset.Description.String
 	}
 	if dataset.Created.Valid {
-		// Log the dataset.Created.Time object to the console
-		fmt.Println(dataset.Created.Time)
 		resp.CreatedAt = dataset.Created.Time.Format("2006-01-02 15:04:05")
 	}
 	if dataset.Updated.Valid {
 		resp.UpdatedAt = dataset.Updated.Time.Format("2006-01-02 15:04:05")
 	}
 
-	h.log.Infow("GetDataset", "dataset", resp)
-
-	// Return in JSON format
-	w.Header().Set("Content-Type", "application/json")
-
-	json.NewEncoder(w).Encode(resp)
 }
