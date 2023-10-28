@@ -18,11 +18,14 @@ import (
 func main() {
 	fx.New(
 		fx.Provide(
-			NewHTTPServer, handler.NewServeMux,
+			NewHTTPServer, handler.NewServeMux, zap.NewProduction,
 			config.Options, db.Options, logger.Options,
 
 			// Handlers
-			handler.NewGetDataset,
+			fx.Annotate(
+				handler.NewGetDataset,
+				fx.As(new(handler.Route)),
+			),
 		),
 		fx.Invoke(func(*http.Server, config.Config, *sql.DB, *zap.SugaredLogger) {}, func() {
 			fmt.Println("Hello, world!")
