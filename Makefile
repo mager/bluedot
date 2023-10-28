@@ -6,12 +6,16 @@ test:
 	go test ./...
 
 build:
-	gcloud builds submit --tag gcr.io/bluedot/bluedot
+	docker build -t bluedot .
+
+publish:
+	gcloud builds submit --tag gcr.io/geotory/bluedot
 
 deploy:
-	gcloud run deploy quotient \
-		--image gcr.io/bluedot/bluedot \
-		--platform managed
+	gcloud run deploy bluedot \
+		--image gcr.io/geotory/bluedot \
+		--platform managed \
+		--set-env-vars BLUEDOT_PGPASSWORD=$(BLUEDOT_PGPASSWORD)
 
 ship:
-	make test && make build && make deploy
+	make test && make build && make publish && make deploy
