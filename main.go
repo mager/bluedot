@@ -9,6 +9,7 @@ import (
 
 	"github.com/mager/bluedot/config"
 	"github.com/mager/bluedot/db"
+	"github.com/mager/bluedot/handler"
 	"github.com/mager/bluedot/logger"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -16,7 +17,13 @@ import (
 
 func main() {
 	fx.New(
-		fx.Provide(NewHTTPServer, config.Options, db.Options, logger.Options),
+		fx.Provide(
+			NewHTTPServer, handler.NewServeMux,
+			config.Options, db.Options, logger.Options,
+
+			// Handlers
+			handler.NewGetDataset,
+		),
 		fx.Invoke(func(*http.Server, config.Config, *sql.DB, *zap.SugaredLogger) {}, func() {
 			fmt.Println("Hello, world!")
 		}),
@@ -24,8 +31,8 @@ func main() {
 
 }
 
-func NewHTTPServer(lc fx.Lifecycle) *http.Server {
-	srv := &http.Server{Addr: ":8080"}
+func NewHTTPServer(lc fx.Lifecycle, mux *http.ServeMux) *http.Server {
+	srv := &http.Server{Addr: ":8080", Handler: mux}
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			ln, err := net.Listen("tcp", srv.Addr)

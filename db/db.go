@@ -32,7 +32,8 @@ func ProvideDB(
 	err = db.Ping()
 	CheckError(err)
 
-	fmt.Println("Connected!")
+	// Log message including hostname
+	fmt.Println("Connected to database on", host, "as user", user)
 
 	return db
 }
