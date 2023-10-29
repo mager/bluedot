@@ -9,6 +9,7 @@ import (
 
 	"github.com/mager/bluedot/config"
 	"github.com/mager/bluedot/db"
+	"github.com/mager/bluedot/firestore"
 	"github.com/mager/bluedot/github"
 	"github.com/mager/bluedot/handler"
 	"github.com/mager/bluedot/logger"
@@ -25,7 +26,7 @@ func main() {
 				fx.ParamTags(`group:"routes"`),
 			),
 			zap.NewProduction,
-			config.Options, db.Options, github.Options, logger.Options,
+			config.Options, db.Options, firestore.Options, github.Options, logger.Options,
 
 			// Handlers
 			AsRoute(handler.NewDatasetsHandler),

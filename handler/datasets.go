@@ -3,6 +3,8 @@ package handler
 import (
 	"database/sql"
 
+	"cloud.google.com/go/firestore"
+	"github.com/google/go-github/v56/github"
 	"go.uber.org/zap"
 )
 
@@ -27,6 +29,8 @@ type DatasetResp struct {
 type DatasetsHandler struct {
 	log *zap.SugaredLogger
 	sql *sql.DB
+	gh  *github.Client
+	fs  *firestore.Client
 }
 
 func (*DatasetsHandler) Pattern() string {
@@ -34,9 +38,11 @@ func (*DatasetsHandler) Pattern() string {
 }
 
 // NewDatasetsHandler builds a new GetDataset.
-func NewDatasetsHandler(log *zap.SugaredLogger, sql *sql.DB) *DatasetsHandler {
+func NewDatasetsHandler(log *zap.SugaredLogger, sql *sql.DB, gh *github.Client, fs *firestore.Client) *DatasetsHandler {
 	return &DatasetsHandler{
 		log: log,
 		sql: sql,
+		gh:  gh,
+		fs:  fs,
 	}
 }

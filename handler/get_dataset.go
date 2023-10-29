@@ -38,11 +38,11 @@ func (h *DatasetsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	resp := DatasetResp{}
 
-	// if method == GET
 	if r.Method == http.MethodGet {
+		// Get Datasets
 		h.getDataset(&resp, username, datasetSlug)
 	} else if r.Method == http.MethodPut {
-		// TODO
+		// Sync Datasets
 		h.syncDataset(&resp, username, datasetSlug)
 	}
 
