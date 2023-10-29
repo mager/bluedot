@@ -9,6 +9,7 @@ import (
 
 	"github.com/mager/bluedot/config"
 	"github.com/mager/bluedot/db"
+	"github.com/mager/bluedot/github"
 	"github.com/mager/bluedot/handler"
 	"github.com/mager/bluedot/logger"
 	"go.uber.org/fx"
@@ -19,7 +20,7 @@ func main() {
 	fx.New(
 		fx.Provide(
 			NewHTTPServer, handler.NewServeMux, zap.NewProduction,
-			config.Options, db.Options, logger.Options,
+			config.Options, db.Options, github.Options, logger.Options,
 
 			// Handlers
 			fx.Annotate(

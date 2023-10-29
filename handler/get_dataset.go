@@ -49,20 +49,32 @@ type GetDatasetResp struct {
 func (h *GetDataset) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/datasets/")
 
+	// Handle error cases
+	if id == "" {
+		http.Error(w, "No dataset ID provided", http.StatusBadRequest)
+		return
+	}
+
+	// Handle when there isn't a slash in the ID
+	if !strings.Contains(id, "/") {
+		http.Error(w, "Invalid dataset ID provided", http.StatusBadRequest)
+		return
+	}
+
 	// The URL will be /datasets/{username}/{datasetSlug}
 	split := strings.Split(id, "/")
 	username := split[0]
 	datasetSlug := split[1]
 
-	// Get the user from the database
-	user := db.GetUserByUsername(h.sql, username)
+	resp := GetDatasetResp{}
 
-	// Get the dataset from the database
-	dataset := db.GetDatasetByUserIdAndSlug(h.sql, user.ID, datasetSlug)
-
-	// Return the dataset object to the client
-	resp := &GetDatasetResp{}
-	mapResp(resp, user, dataset)
+	// if method == GET
+	if r.Method == http.MethodGet {
+		h.getDataset(&resp, username, datasetSlug)
+	} else if r.Method == http.MethodPut {
+		// TODO
+		h.log.Info("PUT")
+	}
 
 	// Return in JSON format
 	w.Header().Set("Content-Type", "application/json")
@@ -70,7 +82,14 @@ func (h *GetDataset) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func mapResp(resp *GetDatasetResp, user db.User, dataset db.Dataset) {
+func (h *GetDataset) getDataset(resp *GetDatasetResp, username, datasetSlug string) *GetDatasetResp {
+	// Get the user from the database
+	user := db.GetUserByUsername(h.sql, username)
+
+	// Get the dataset from the database
+	dataset := db.GetDatasetByUserIdAndSlug(h.sql, user.ID, datasetSlug)
+
+	// Set the response
 	resp.ID = dataset.ID
 	resp.UserID = dataset.UserID
 	resp.Name = dataset.Name
@@ -89,4 +108,6 @@ func mapResp(resp *GetDatasetResp, user db.User, dataset db.Dataset) {
 
 	resp.User.Image = user.Image
 	resp.User.Slug = user.Slug
+
+	return resp
 }

@@ -1,0 +1,56 @@
+openapi: 3.0.3
+info:
+  title: Dataset API
+  description: This API provides a way to get, create, update, and delete datasets.
+  version: 1.0.0
+
+paths:
+  /datasets/{username}/{datasetSlug}:
+    get:
+      summary: Get a dataset
+      description: Get a dataset by its username and dataset slug.
+      operationId: GetDataset
+      parameters:
+        - name: username
+          in: path
+          required: true
+          type: string
+        - name: datasetSlug
+          in: path
+          required: true
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  userId:
+                    type: string
+                  name:
+                    type: string
+                  slug:
+                    type: string
+                  source:
+                    type: string
+                  description:
+                    type: string
+                  createdAt:
+                    type: string
+                  updatedAt:
+                    type: string
+                  user:
+                    type: object
+                    properties:
+                      image:
+                        type: string
+                      slug:
+                        type: string
+        400:
+          description: Bad Request
+        404:
+          description: Not Found
