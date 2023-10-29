@@ -26,7 +26,7 @@ func TestGetDataset(t *testing.T) {
 				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 			}
 			defer db.Close()
-			h := handler.NewGetDataset(log, db)
+			h := handler.NewDatasetsHandler(log, db)
 
 			mock.ExpectQuery(regexp.QuoteMeta(`SELECT id, name, email, image, slug FROM "User" WHERE slug=$1`)).
 				WithArgs("mager").

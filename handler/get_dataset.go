@@ -1,52 +1,22 @@
 package handler
 
 import (
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strings"
 
 	"github.com/mager/bluedot/db"
-	"go.uber.org/zap"
 )
 
-// GetDataset is an http.Handler that copies its request body
-// back to the response.
-type GetDataset struct {
-	log *zap.SugaredLogger
-	sql *sql.DB
-}
-
-func (*GetDataset) Pattern() string {
-	return "/datasets/"
-}
-
-// NewGetDataset builds a new GetDataset.
-func NewGetDataset(log *zap.SugaredLogger, sql *sql.DB) *GetDataset {
-	return &GetDataset{
-		log: log,
-		sql: sql,
+// ServeHTTP handles an HTTP requests.
+func (h *DatasetsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// If not /datasets/, return 404
+	if !strings.HasPrefix(r.URL.Path, "/datasets/") {
+		http.NotFound(w, r)
+		return
 	}
-}
 
-type GetDatasetResp struct {
-	ID          string `json:"id"`
-	UserID      string `json:"userId"`
-	Name        string `json:"name"`
-	Slug        string `json:"slug"`
-	Source      string `json:"source"`
-	Description string `json:"description"`
-	CreatedAt   string `json:"createdAt"`
-	UpdatedAt   string `json:"updatedAt"`
-
-	User struct {
-		Image string `json:"image"`
-		Slug  string `json:"slug"`
-	} `json:"user"`
-}
-
-// ServeHTTP handles an HTTP request to the /echo endpoint.
-func (h *GetDataset) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Get the dataset ID from the URL
 	id := strings.TrimPrefix(r.URL.Path, "/datasets/")
 
 	// Handle error cases
@@ -66,14 +36,14 @@ func (h *GetDataset) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	username := split[0]
 	datasetSlug := split[1]
 
-	resp := GetDatasetResp{}
+	resp := DatasetResp{}
 
 	// if method == GET
 	if r.Method == http.MethodGet {
 		h.getDataset(&resp, username, datasetSlug)
 	} else if r.Method == http.MethodPut {
 		// TODO
-		h.log.Info("PUT")
+		h.syncDataset(&resp, username, datasetSlug)
 	}
 
 	// Return in JSON format
@@ -82,7 +52,7 @@ func (h *GetDataset) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func (h *GetDataset) getDataset(resp *GetDatasetResp, username, datasetSlug string) *GetDatasetResp {
+func (h *DatasetsHandler) getDataset(resp *DatasetResp, username, datasetSlug string) *DatasetResp {
 	// Get the user from the database
 	user := db.GetUserByUsername(h.sql, username)
 

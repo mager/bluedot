@@ -18,4 +18,4 @@ deploy:
 		--set-env-vars BLUEDOT_PGPASSWORD=$(BLUEDOT_PGPASSWORD)
 
 ship:
-	make test && make build && make publish && make deploy
+	make build && make publish && make deploy

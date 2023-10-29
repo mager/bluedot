@@ -19,20 +19,32 @@ import (
 func main() {
 	fx.New(
 		fx.Provide(
-			NewHTTPServer, handler.NewServeMux, zap.NewProduction,
+			NewHTTPServer,
+			fx.Annotate(
+				handler.NewServeMux,
+				fx.ParamTags(`group:"routes"`),
+			),
+			zap.NewProduction,
 			config.Options, db.Options, github.Options, logger.Options,
 
 			// Handlers
-			fx.Annotate(
-				handler.NewGetDataset,
-				fx.As(new(handler.Route)),
-			),
+			AsRoute(handler.NewDatasetsHandler),
 		),
 		fx.Invoke(func(*http.Server, config.Config, *sql.DB, *zap.SugaredLogger) {}, func() {
 			fmt.Println("Hello, world!")
 		}),
 	).Run()
 
+}
+
+// AsRoute annotates the given constructor to state that
+// it provides a route to the "routes" group.
+func AsRoute(f any) any {
+	return fx.Annotate(
+		f,
+		fx.As(new(handler.Route)),
+		fx.ResultTags(`group:"routes"`),
+	)
 }
 
 func NewHTTPServer(lc fx.Lifecycle, mux *http.ServeMux) *http.Server {

@@ -4,6 +4,49 @@ info:
   description: This API provides a way to get, create, update, and delete datasets.
   version: 1.0.0
 
+components:
+  parameters:
+    UsernameParam:
+      name: username
+      in: path
+      required: true
+      schema:
+        type: string
+    DatasetSlugParam:
+      name: datasetSlug
+      in: path
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    DatasetResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        source:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        user:
+          type: object
+          properties:
+            image:
+              type: string
+            slug:
+              type: string
+
 paths:
   /datasets/{username}/{datasetSlug}:
     get:
@@ -11,45 +54,33 @@ paths:
       description: Get a dataset by its username and dataset slug.
       operationId: GetDataset
       parameters:
-        - name: username
-          in: path
-          required: true
-          type: string
-        - name: datasetSlug
-          in: path
-          required: true
-          type: string
+        - $ref: "#/components/parameters/UsernameParam"
+        - $ref: "#/components/parameters/DatasetSlugParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                  userId:
-                    type: string
-                  name:
-                    type: string
-                  slug:
-                    type: string
-                  source:
-                    type: string
-                  description:
-                    type: string
-                  createdAt:
-                    type: string
-                  updatedAt:
-                    type: string
-                  user:
-                    type: object
-                    properties:
-                      image:
-                        type: string
-                      slug:
-                        type: string
+                $ref: "#/components/schemas/DatasetResponse"
+        400:
+          description: Bad Request
+        404:
+          description: Not Found
+    put:
+      summary: Sync a dataset
+      description: Sync a dataset with its source.
+      operationId: SyncDataset
+      parameters:
+        - $ref: "#/components/parameters/UsernameParam"
+        - $ref: "#/components/parameters/DatasetSlugParam"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetResponse"
         400:
           description: Bad Request
         404:

@@ -1,6 +1,8 @@
 package handler
 
-import "net/http"
+import (
+	"net/http"
+)
 
 // Route is an http.Handler that knows the mux pattern
 // under which it will be registered.
@@ -13,8 +15,10 @@ type Route interface {
 
 // NewServeMux builds a ServeMux that will route requests
 // to the given Route.
-func NewServeMux(route Route) *http.ServeMux {
+func NewServeMux(routes []Route) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.Handle(route.Pattern(), route)
+	for _, route := range routes {
+		mux.Handle(route.Pattern(), route)
+	}
 	return mux
 }
