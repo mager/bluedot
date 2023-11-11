@@ -44,9 +44,10 @@ func (h *Handler) syncDataset(w http.ResponseWriter, r *http.Request) {
 		h.Logger.Errorf("Error fetching contents: %s", err)
 	}
 
+	var types []int
 	record := map[string]interface{}{
 		"source": fmt.Sprintf("%s/%s/%s", owner, repo, path),
-		"types":  []fs.DatasetTypeValue{},
+		"types":  types,
 	}
 
 	pngFile := ""
@@ -62,7 +63,7 @@ func (h *Handler) syncDataset(w http.ResponseWriter, r *http.Request) {
 		// If there is a filename ending in .gkpg, set the value to firestore.DatasetTypeGeopackage
 		if f[len(f)-5:] == ".gpkg" {
 			h.Logger.Infof("Geopackage found!: %s", f)
-			record["types"] = append(record["types"].([]fs.DatasetTypeValue), fs.DatasetTypeGeopackage)
+			record["types"] = append(record["types"].([]int), fs.DatasetTypeGeopackage)
 		}
 	}
 

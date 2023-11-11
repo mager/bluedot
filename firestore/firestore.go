@@ -21,15 +21,13 @@ func ProvideFirestore() *firestore.Client {
 var Options = ProvideFirestore
 
 type Dataset struct {
-	Image string `json:"image"`
+	Image string  `json:"image" firestore:"image"`
+	Types []int64 `json:"types" firestore:"types"`
 }
-
-type DatasetTypeName string
-type DatasetTypeValue int
 
 const (
 	// DatasetTypeValueUnknown is an unknown dataset type
-	DatasetTypeValueUnknown DatasetTypeValue = iota
+	DatasetTypeValueUnknown int = iota
 	// DatasetTypeGeopackage is a geopackage dataset type
 	DatasetTypeGeopackage
 	// DatasetTypeGeojson is a geojson dataset type
@@ -38,14 +36,14 @@ const (
 	DatasetTypeShapefile
 
 	// DatasetTypeNameGeopackage is the name of the geopackage dataset type
-	DatasetTypeNameGeopackage DatasetTypeName = "geopackage"
+	DatasetTypeNameGeopackage = "geopackage"
 	// DatasetTypeNameGeojson is the name of the geojson dataset type
-	DatasetTypeNameGeojson DatasetTypeName = "geojson"
+	DatasetTypeNameGeojson = "geojson"
 	// DatasetTypeNameShapefile is the name of the shapefile dataset type
-	DatasetTypeNameShapefile DatasetTypeName = "shapefile"
+	DatasetTypeNameShapefile = "shapefile"
 )
 
-func DatasetTypeNameToValue(typeName DatasetTypeName) DatasetTypeValue {
+func DatasetTypeNameToValue(typeName string) int {
 	switch typeName {
 	case DatasetTypeNameGeopackage:
 		return DatasetTypeGeopackage
@@ -58,7 +56,7 @@ func DatasetTypeNameToValue(typeName DatasetTypeName) DatasetTypeValue {
 	}
 }
 
-func DatasetTypeValueToName(typeValue DatasetTypeValue) DatasetTypeName {
+func DatasetTypeValueToName(typeValue int) string {
 	switch typeValue {
 	case DatasetTypeGeopackage:
 		return DatasetTypeNameGeopackage

@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/mager/bluedot/db"
+	fs "github.com/mager/bluedot/firestore"
 )
 
 // ServeHTTP handles an HTTP requests.
@@ -58,6 +59,13 @@ func (h *Handler) getDataset(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp.Image = doc.Data()["image"].(string)
+
+	types := doc.Data()["types"].([]interface{})
+	for _, t := range types {
+		resp.Types = append(resp.Types, DatasetType{
+			Name: fs.DatasetTypeValueToName(int(t.(int64))),
+		})
+	}
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(resp)
