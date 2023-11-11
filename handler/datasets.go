@@ -5,6 +5,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/google/go-github/v56/github"
+	fs "github.com/mager/bluedot/firestore"
 	"go.uber.org/zap"
 )
 
@@ -22,6 +23,9 @@ type DatasetResp struct {
 		Image string `json:"image"`
 		Slug  string `json:"slug"`
 	} `json:"user"`
+
+	// Firestore record
+	fs.Dataset
 }
 
 // DatasetsHandler is an http.DatasetsHandler that copies its request body

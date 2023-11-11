@@ -15,7 +15,9 @@ func GetUserByUsername(db *sql.DB, username string) User {
 		&user.Image,
 		&user.Slug,
 	)
-	CheckError(err)
+	if err != nil {
+		fmt.Println("Error getting user by username: ", err)
+	}
 	return user
 }
 
@@ -34,6 +36,8 @@ func GetDatasetByUserIdAndSlug(db *sql.DB, userID string, slug string) Dataset {
 		&dataset.Created,
 		&dataset.Updated,
 	)
-	CheckError(err)
+	if err != nil {
+		fmt.Println("Error getting dataset by user ID and slug: ", err)
+	}
 	return dataset
 }
