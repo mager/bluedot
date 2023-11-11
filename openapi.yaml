@@ -85,3 +85,23 @@ paths:
           description: Bad Request
         404:
           description: Not Found
+  /datasets/{username}/{datasetSlug}/zip:
+    get:
+      summary: Download a dataset zip
+      description: Download a dataset zip by its username and dataset slug.
+      operationId: DownloadDatasetZip
+      parameters:
+        - $ref: "#/components/parameters/UsernameParam"
+        - $ref: "#/components/parameters/DatasetSlugParam"
+      responses:
+        200:
+          description: OK
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        400:
+          description: Bad Request
+        404:
+          description: Not Found

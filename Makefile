@@ -15,6 +15,7 @@ deploy:
 	gcloud run deploy bluedot \
 		--image gcr.io/geotory/bluedot \
 		--platform managed \
+		--port 8085 \
 		--set-env-vars BLUEDOT_PGPASSWORD=$(BLUEDOT_PGPASSWORD)
 
 ship:
