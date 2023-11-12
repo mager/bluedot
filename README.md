@@ -2,6 +2,8 @@
 
 ## Development
 
+Runs on port 8085.
+
 ### Run locally
 
 ```sh
@@ -37,5 +39,5 @@ make deploy
 ### Generate Postman collection
 
 ```sh
-openapi2postmanv2 -s openapi.yaml -o collection.json
+make postman
 ```

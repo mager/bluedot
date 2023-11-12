@@ -70,3 +70,11 @@ func GetDatasetsByUserId(db *sql.DB, userID string) []Dataset {
 	}
 	return datasets
 }
+
+func DeleteDatasetByUserIdAndSlug(db *sql.DB, userID string, slug string) {
+	queryString := fmt.Sprintf("DELETE FROM \"Dataset\" WHERE \"userId\" = '%s' AND slug = '%s'", userID, slug)
+	_, err := db.Exec(queryString)
+	if err != nil {
+		fmt.Println("Error deleting dataset by user ID and slug: ", err)
+	}
+}

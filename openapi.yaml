@@ -63,7 +63,7 @@ paths:
     get:
       summary: Get datasets by user
       description: Get all datasets by username.
-      operationId: GetDataset
+      operationId: GetDatasets
       parameters:
         - $ref: "#/components/parameters/UsernameParam"
       responses:
@@ -92,6 +92,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DatasetResponse"
+              example:
+                id: "123"
+                userId: "456"
+                name: "My Illinois Map"
+                slug: "my-illinois-map"
+                source: "mager/maps/illinois"
+                description: "This is a sample dataset for demonstration purposes."
+                createdAt: "2023-01-01T12:00:00Z"
+                updatedAt: "2023-01-02T15:30:00Z"
+                user:
+                  image: "https://github.com/user-avatar.jpg"
+                  slug: "mager"
         400:
           description: Bad Request
         404:
@@ -100,6 +112,24 @@ paths:
       summary: Sync a dataset
       description: Sync a dataset with its source.
       operationId: SyncDataset
+      parameters:
+        - $ref: "#/components/parameters/UsernameParam"
+        - $ref: "#/components/parameters/DatasetSlugParam"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetResponse"
+        400:
+          description: Bad Request
+        404:
+          description: Not Found
+    delete:
+      summary: Delete a dataset
+      description: Delete a dataset with its source.
+      operationId: DeleteDataset
       parameters:
         - $ref: "#/components/parameters/UsernameParam"
         - $ref: "#/components/parameters/DatasetSlugParam"

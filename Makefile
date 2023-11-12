@@ -5,6 +5,9 @@ dev:
 test:
 	go test ./...
 
+postman:
+	openapi2postmanv2 -s openapi.yaml -o collection.json
+
 build:
 	docker build -t bluedot .
 
