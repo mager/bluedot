@@ -46,8 +46,37 @@ components:
               type: string
             slug:
               type: string
+    DatasetsResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        image:
+          type: string
 
 paths:
+  /datasets/{username}:
+    get:
+      summary: Get datasets by user
+      description: Get all datasets by username.
+      operationId: GetDataset
+      parameters:
+        - $ref: "#/components/parameters/UsernameParam"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetsResponse"
+        400:
+          description: Bad Request
+        404:
+          description: Not Found
   /datasets/{username}/{datasetSlug}:
     get:
       summary: Get a dataset

@@ -41,3 +41,32 @@ func GetDatasetByUserIdAndSlug(db *sql.DB, userID string, slug string) Dataset {
 	}
 	return dataset
 }
+
+func GetDatasetsByUserId(db *sql.DB, userID string) []Dataset {
+	var datasets []Dataset
+	queryString := fmt.Sprintf("SELECT id, \"userId\", name, slug, source, description, created, updated FROM \"Dataset\" WHERE \"userId\" = '%s'", userID)
+	rows, err := db.Query(queryString)
+	if err != nil {
+		fmt.Println("Error getting datasets by user ID: ", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var dataset Dataset
+		err := rows.Scan(
+			&dataset.ID,
+			&dataset.UserID,
+			&dataset.Name,
+			&dataset.Slug,
+			&dataset.Source,
+			&dataset.Description,
+			&dataset.Created,
+			&dataset.Updated,
+		)
+		if err != nil {
+			fmt.Println("Error scanning dataset row: ", err)
+		}
+		datasets = append(datasets, dataset)
+	}
+	return datasets
+}

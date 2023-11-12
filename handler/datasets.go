@@ -31,6 +31,17 @@ type DatasetType struct {
 	Name string `json:"name"`
 }
 
+type Datasets struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Slug  string `json:"slug"`
+	Image string `json:"image"`
+}
+
+type DatasetsResp struct {
+	Datasets []Datasets `json:"datasets"`
+}
+
 // DatasetsHandler is an http.DatasetsHandler that copies its request body
 // back to the response.
 type DatasetsHandler struct {

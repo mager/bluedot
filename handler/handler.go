@@ -50,6 +50,7 @@ func New(h Handler) *Handler {
 
 // RegisterRoutes registers all the routes for the route handler
 func (h *Handler) registerRoutes() {
+	h.Router.HandleFunc("/datasets/{username}", h.getDatasets).Methods("GET")
 	h.Router.HandleFunc("/datasets/{username}/{slug}", h.getDataset).Methods("GET")
 	h.Router.HandleFunc("/datasets/{username}/{slug}", h.syncDataset).Methods("PUT")
 	h.Router.HandleFunc("/datasets/{username}/{slug}/zip", h.downloadDatasetZip).Methods("GET")
