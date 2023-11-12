@@ -55,4 +55,7 @@ func (h *Handler) registerRoutes() {
 	h.Router.HandleFunc("/datasets/{username}/{slug}", h.syncDataset).Methods("PUT")
 	h.Router.HandleFunc("/datasets/{username}/{slug}", h.deleteDataset).Methods("DELETE")
 	h.Router.HandleFunc("/datasets/{username}/{slug}/zip", h.downloadDatasetZip).Methods("GET")
+
+	// Experimental
+	h.Router.HandleFunc("/shapefile", h.getShapefileJSON).Methods("GET")
 }
