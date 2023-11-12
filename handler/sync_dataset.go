@@ -50,20 +50,22 @@ func (h *Handler) syncDataset(w http.ResponseWriter, r *http.Request) {
 		"types":  types,
 	}
 
-	pngFile := ""
-
 	for _, file := range dc {
 		f := file.GetName()
-		h.Logger.Infof("File found!: %s", f)
 		// If there is a filename ending in .png, set it as the image
 		if f[len(f)-4:] == ".png" {
-			h.Logger.Infof("PNG File found!: %s", pngFile)
 			record["image"] = f
 		}
-		// If there is a filename ending in .gkpg, set the value to firestore.DatasetTypeGeopackage
+		// Use svg as backup
+		if f[len(f)-4:] == ".svg" {
+			record["image"] = f
+		}
+		// Handle types
 		if f[len(f)-5:] == ".gpkg" {
-			h.Logger.Infof("Geopackage found!: %s", f)
 			record["types"] = append(record["types"].([]int), fs.DatasetTypeGeopackage)
+		}
+		if f[len(f)-8:] == ".geojson" {
+			record["types"] = append(record["types"].([]int), fs.DatasetTypeGeojson)
 		}
 	}
 
