@@ -2,15 +2,20 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 
-	"github.com/jonas-p/go-shp"
+	"github.com/everystreet/go-shapefile"
 )
 
-// GeneralGeoJSONStruct is a generic GeoJSON struct
-type GeneralGeoJSONStruct struct {
+type GeoJSONResp struct {
+	Type     string    `json:"type"`
+	Features []Feature `json:"features"`
+}
+
+type Feature struct {
 	Type       string                 `json:"type"`
 	Properties map[string]interface{} `json:"properties"`
 	Geometry   map[string]interface{} `json:"geometry"`
@@ -18,23 +23,8 @@ type GeneralGeoJSONStruct struct {
 
 // ServeHTTP handles an HTTP requests.
 func (h *Handler) getShapefileJSON(w http.ResponseWriter, r *http.Request) {
-	resp := GeneralGeoJSONStruct{}
-
-	// Insert some dummy data
-	// resp.Type = "Feature"
-	// resp.Properties = make(map[string]interface{})
-	// resp.Properties["name"] = "dummy"
-	// resp.Properties["description"] = "dummy"
-	// resp.Geometry = make(map[string]interface{})
-	// resp.Geometry["type"] = "Point"
-	// resp.Geometry["coordinates"] = []float64{0, 0}
-
 	// Fetch the Shapefile and then convert it to GeoJSON
-	url := "https://github.com/mager/maps/raw/main/illinois-elections/tl_2012_17_vtd10.shp"
-	// Make an HTTP request to the URL
-	// Convert the Shapefile to GeoJSON
-	// Return the GeoJSON
-
+	url := "https://github.com/mager/maps/raw/main/illinois-elections/tl_2012_17_vtd10.zip"
 	response, err := http.Get(url)
 	if err != nil {
 		http.Error(w, "Error fetching Shapefile", http.StatusInternalServerError)
@@ -43,38 +33,91 @@ func (h *Handler) getShapefileJSON(w http.ResponseWriter, r *http.Request) {
 
 	defer response.Body.Close()
 
-	// Create a temporary file to store the downloaded data
-	tempFile, err := os.CreateTemp("", "shapefile-*")
+	// Create a temporary file to store the downloaded shapefile
+	tmpfile, err := os.CreateTemp("", "shpp")
 	if err != nil {
-		h.Logger.Errorf("Error creating temporary file: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	defer os.Remove(tempFile.Name())
+	defer tmpfile.Close()
 
-	// Write the data to the temporary file
-	_, err = io.Copy(tempFile, response.Body)
+	_, err = io.Copy(tmpfile, response.Body)
 	if err != nil {
-		h.Logger.Errorf("Error writing to temporary file: %s", err)
-	}
-
-	// Parse the downloaded shapefile
-	shape, err := shp.Open(tempFile.Name())
-	if err != nil {
-		h.Logger.Errorf("Error opening shapefile: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	// Get the fields from the shapefile
-	fields := shape.Fields()
+	// Print the filename and more details about the file
+	fmt.Println(tmpfile.Name())
+	fmt.Println(tmpfile.Stat())
+	file, err := os.Open(tmpfile.Name())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	// Get the shapefile records
-	for shape.Next() {
-		n, p := shape.Shape()
-		h.Logger.Infof("Shape: %d, %v", n, p)
+	stat, err := file.Stat()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-		for k, f := range fields {
-			val := shape.ReadAttribute(n, k)
-			h.Logger.Infof("Field: %s, %v", f, val)
+	scanner, err := shapefile.NewZipScanner(file, stat.Size(), "tl_2012_17_vtd10.zip")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = scanner.Scan()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resp := GeoJSONResp{
+		Type:     "FeatureCollection",
+		Features: []Feature{},
+	}
+
+	for {
+		record := scanner.Record()
+		if record == nil {
+			break
 		}
+		feature := record.GeoJSONFeature()
+		fmt.Println(feature)
+
+		// Set the geometry in the resp.Geometry map
+		jsonData, err := json.Marshal(feature)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		var f map[string]interface{}
+		err = json.Unmarshal(jsonData, &f)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Set the geometry in the resp.Geometry map
+		resp.Features = append(resp.Features, Feature{
+			Type:       "Feature",
+			Properties: f["properties"].(map[string]interface{}),
+			Geometry:   f["geometry"].(map[string]interface{}),
+		})
 	}
+
+	// Err() returns the first error encountered during calls to Record()
+	err = scanner.Err()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// TODO: The GeoJSON files can be HUGE! Let's return a smaller response by simplifying the geometry
+	// in each feature.
 
 	// Set the Content-Type header
 	w.Header().Set("Content-Type", "application/json")
