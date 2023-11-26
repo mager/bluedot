@@ -2,12 +2,12 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
 
 	"github.com/everystreet/go-shapefile"
+	"github.com/paulmach/orb/geojson"
 )
 
 type GeoJSONResp struct {
@@ -47,9 +47,6 @@ func (h *Handler) getShapefileJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Print the filename and more details about the file
-	fmt.Println(tmpfile.Name())
-	fmt.Println(tmpfile.Stat())
 	file, err := os.Open(tmpfile.Name())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -74,18 +71,14 @@ func (h *Handler) getShapefileJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := GeoJSONResp{
-		Type:     "FeatureCollection",
-		Features: []Feature{},
-	}
-
-	for {
+	fc := geojson.NewFeatureCollection()
+	counter := 0
+	for counter < 3 {
 		record := scanner.Record()
 		if record == nil {
 			break
 		}
 		feature := record.GeoJSONFeature()
-		fmt.Println(feature)
 
 		// Set the geometry in the resp.Geometry map
 		jsonData, err := json.Marshal(feature)
@@ -94,19 +87,15 @@ func (h *Handler) getShapefileJSON(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		var f map[string]interface{}
-		err = json.Unmarshal(jsonData, &f)
+		var feat geojson.Feature
+		err = json.Unmarshal(jsonData, &feat)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		// Set the geometry in the resp.Geometry map
-		resp.Features = append(resp.Features, Feature{
-			Type:       "Feature",
-			Properties: f["properties"].(map[string]interface{}),
-			Geometry:   f["geometry"].(map[string]interface{}),
-		})
+		fc.Append(&feat)
+		counter++
 	}
 
 	// Err() returns the first error encountered during calls to Record()
@@ -116,13 +105,11 @@ func (h *Handler) getShapefileJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: The GeoJSON files can be HUGE! Let's return a smaller response by simplifying the geometry
-	// in each feature.
-
 	// Set the Content-Type header
 	w.Header().Set("Content-Type", "application/json")
 
 	// Write the response
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(resp)
+	json.NewEncoder(w).Encode(fc)
+
 }

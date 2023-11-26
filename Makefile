@@ -8,9 +8,6 @@ test:
 postman:
 	openapi2postmanv2 -s openapi.yaml -o collection.json
 
-build:
-	docker build -t bluedot .
-
 publish:
 	gcloud builds submit --tag gcr.io/geotory/bluedot
 
@@ -22,4 +19,4 @@ deploy:
 		--set-env-vars BLUEDOT_PGPASSWORD=$(BLUEDOT_PGPASSWORD)
 
 ship:
-	make build && make publish && make deploy
+	make publish && make deploy

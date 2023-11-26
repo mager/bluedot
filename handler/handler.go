@@ -34,12 +34,13 @@ func NewServeMux(routes []Route) *http.ServeMux {
 type Handler struct {
 	fx.In
 
-	Config    config.Config
-	Database  *sql.DB
-	Firestore *firestore.Client
-	Github    *github.Client
-	Logger    *zap.SugaredLogger
-	Router    *mux.Router
+	Config     config.Config
+	Database   *sql.DB
+	Firestore  *firestore.Client
+	Github     *github.Client
+	HttpClient *http.Client
+	Logger     *zap.SugaredLogger
+	Router     *mux.Router
 }
 
 // New creates a Handler struct
@@ -55,7 +56,5 @@ func (h *Handler) registerRoutes() {
 	h.Router.HandleFunc("/datasets/{username}/{slug}", h.syncDataset).Methods("PUT")
 	h.Router.HandleFunc("/datasets/{username}/{slug}", h.deleteDataset).Methods("DELETE")
 	h.Router.HandleFunc("/datasets/{username}/{slug}/zip", h.downloadDatasetZip).Methods("GET")
-
-	// Experimental
-	h.Router.HandleFunc("/shapefileToGeoJSON", h.getShapefileJSON).Methods("GET")
+	h.Router.HandleFunc("/datasets/saveFeatures", h.saveFeatures).Methods("POST")
 }

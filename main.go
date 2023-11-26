@@ -46,8 +46,13 @@ func Register(cfg config.Config, db *sql.DB, fs *fs.Client, gh *gh.Client, log *
 		Database:  db,
 		Firestore: fs,
 		Github:    gh,
-		Logger:    log,
-		Router:    router,
+		HttpClient: &http.Client{
+			Transport: &http.Transport{
+				MaxIdleConnsPerHost: 100,
+			},
+		},
+		Logger: log,
+		Router: router,
 	}
 
 	handler.New(params)
