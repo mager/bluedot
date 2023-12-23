@@ -18,7 +18,13 @@ type GeoJSONResp struct {
 type Feature struct {
 	Type       string                 `json:"type"`
 	Properties map[string]interface{} `json:"properties"`
-	Geometry   map[string]interface{} `json:"geometry"`
+	Geometry   Geometry               `json:"geometry"`
+}
+
+type Geometry struct {
+	Type        string      `json:"type"`
+	Coordinates [][]float64 `json:"coordinates"`
+	Bbox        []float64   `json:"bbox"`
 }
 
 // ServeHTTP handles an HTTP requests.
