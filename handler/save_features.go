@@ -7,6 +7,10 @@ import (
 	"net/http"
 
 	"github.com/k0kubun/pp"
+	"github.com/mager/bluedot/firestore"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	geojson "github.com/paulmach/go.geojson"
 )
 
@@ -82,23 +86,28 @@ func (h *Handler) saveFeatures(w http.ResponseWriter, r *http.Request) {
 	numPolygons := 0
 	numMultiPolygons := 0
 
-	for _, f := range features {
+	for _, f := range features[10:13] {
+		geos := []firestore.Geometry{}
 		if f.Geometry.IsPolygon() {
 			pp.Print("Found a polygon!")
-			polygon := f.Geometry.Polygon
+			feat := f.Geometry.Polygon
 			props := f.Properties
 			pp.Print("Properties:", props)
-			rawCoords := make([]float64, len(p)*2)
-			for i, p := range polygon {
-				pp.Print("Printing coordinates for poly index:", i)
-				// For each polygon, we will have a long list of lat/long coordinates
-				// but it will be as a single []float64
-				for _, c := range p {
-					rawCoords = append(rawCoords, c...)
+			polyCoords := []float64{}
+			for i, p := range feat {
+				if i == 0 {
+					for _, c := range p {
+						polyCoords = append(polyCoords, c...)
+					}
+				} else {
+					pp.Print("TODO: Handle holes")
 				}
 			}
+			geos = append(geos, firestore.Geometry{
+				Coords: polyCoords,
+			})
 			numPolygons++
-			pp.Print("Raw coords for polygon:", rawCoords)
+			pp.Print("Coords for polygon:", polyCoords)
 		}
 
 		if f.Geometry.IsMultiPolygon() {
@@ -121,6 +130,37 @@ func (h *Handler) saveFeatures(w http.ResponseWriter, r *http.Request) {
 		if f.Geometry.IsMultiLineString() {
 			pp.Print("TODO: Handle MultiLineString")
 		}
+
+		// Look in the database to see if the signature exists
+		u := firestore.GetFeatureUUID(f.Properties)
+
+		// First look for the feature by UUID
+		snap, err := h.Firestore.Collection("features").Doc(u.String()).Get(r.Context())
+		if err != nil && status.Code(err) != codes.NotFound {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		pp.Print("Found feature by UUID:", snap.Exists())
+
+		// If the document already exists, then skip it
+		if !snap.Exists() {
+			// If the signature does not exist, then save the feature to Firestore
+			feature := firestore.Feature{
+				Dataset:    req.Dataset,
+				Type:       firestore.FeatureTypePolygon,
+				Properties: f.Properties,
+				Geometries: geos,
+			}
+
+			_, err := h.Firestore.Collection("features").Doc(u.String()).Set(r.Context(), feature)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		pp.Println("Saved feature to Firestore!", f.Properties)
 	}
 
 	pp.Println("Number of polygons:", numPolygons)

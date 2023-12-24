@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/firestore v1.14.0
 	github.com/everystreet/go-shapefile v1.0.0
 	github.com/google/go-github/v56 v56.0.0
+	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.1
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -14,6 +15,7 @@ require (
 	github.com/paulmach/orb v0.10.0
 	go.uber.org/fx v1.20.1
 	go.uber.org/zap v1.23.0
+	google.golang.org/grpc v1.56.1
 )
 
 require (
@@ -55,6 +57,5 @@ require (
 	google.golang.org/genproto v0.0.0-20230530153820-e85fd2cbaebc // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect
-	google.golang.org/grpc v1.56.1 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 )

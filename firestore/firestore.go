@@ -4,11 +4,13 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 
 	"cloud.google.com/go/firestore"
+	"github.com/google/uuid"
 )
 
 // ProvideFirestore provides a firestore client
@@ -24,23 +26,41 @@ func ProvideFirestore() *firestore.Client {
 
 var Options = ProvideFirestore
 
+// Feature types
+const (
+	// FeatureTypeValueUnknown is an unknown feature type
+	FeatureTypeValueUnknown int = iota
+	// FeatureTypePoint is a point feature type
+	FeatureTypePoint
+	// FeatureTypeLineString is a line string feature type
+	FeatureTypeLineString
+	// FeatureTypePolygon is a polygon feature type
+	FeatureTypePolygon
+	// FeatureTypeMultiPoint is a multi point feature type
+	FeatureTypeMultiPoint
+	// FeatureTypeMultiLineString is a multi line string feature type
+	FeatureTypeMultiLineString
+	// FeatureTypeMultiPolygon is a multi polygon feature type
+	FeatureTypeMultiPolygon
+	// FeatureTypeGeometryCollection is a geometry collection feature type
+	FeatureTypeGeometryCollection
+)
+
 type Dataset struct {
-	Image string  `json:"image" firestore:"image"`
-	Types []int64 `json:"types" firestore:"types"`
+	Image    string    `json:"image" firestore:"image"`
+	Source   string    `json:"source" firestore:"source"`
+	Features []Feature `json:"features" firestore:"features"`
 }
 
 type Feature struct {
-	Type int `json:"type" firestore:"type"`
-}
-
-type Property struct {
-	Dataset string      `json:"dataset" firestore:"dataset"`
-	Data    interface{} `json:"data" firestore:"data"`
+	Dataset    string      `json:"dataset" firestore:"dataset"`
+	Type       int         `json:"type" firestore:"type"`
+	Properties interface{} `json:"properties" firestore:"properties"`
+	Geometries []Geometry  `json:"geometries" firestore:"geometries"`
 }
 
 type Geometry struct {
-	Dataset string      `json:"dataset" firestore:"dataset"`
-	Data    interface{} `json:"data" firestore:"data"`
+	Coords []float64 `json:"coords" firestore:"coords"`
 }
 
 const (
@@ -102,4 +122,13 @@ func GenerateDocumentID(name string) string {
 	// Combine the timestamp and random number to generate the document ID
 	prefix := fmt.Sprintf("%010d%08x", timestamp, randomNumber)
 	return prefix + name
+}
+
+func GetFeatureUUID(data map[string]interface{}) uuid.UUID {
+	// Serialize the map into a JSON string
+	dataJSON, _ := json.Marshal(data)
+
+	// Generate a UUID using SHA-1 hash of the namespace and serialized data
+	u := uuid.NewSHA1(uuid.NameSpaceDNS, append([]byte("geotory"), dataJSON...))
+	return u
 }
