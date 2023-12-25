@@ -11,6 +11,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/google/uuid"
+	geojson "github.com/paulmach/go.geojson"
 )
 
 // ProvideFirestore provides a firestore client
@@ -124,11 +125,37 @@ func GenerateDocumentID(name string) string {
 	return prefix + name
 }
 
-func GetFeatureUUID(data map[string]interface{}) uuid.UUID {
+func GetFeatureUUID(f *geojson.Feature) uuid.UUID {
+	// Create a map of the feature properties and the first coordinate of the first geometry
+	data := map[string]interface{}{
+		"properties": f.Properties,
+		"firstCoord": getFirstCoordinate(f),
+	}
+
 	// Serialize the map into a JSON string
 	dataJSON, _ := json.Marshal(data)
 
 	// Generate a UUID using SHA-1 hash of the namespace and serialized data
 	u := uuid.NewSHA1(uuid.NameSpaceDNS, append([]byte("geotory"), dataJSON...))
 	return u
+}
+
+func getFirstCoordinate(f *geojson.Feature) []float64 {
+	// Check feature type and return the first coordinate
+	switch f.Geometry.Type {
+	case geojson.GeometryPoint:
+		return f.Geometry.Point
+	case geojson.GeometryMultiPoint:
+		return f.Geometry.MultiPoint[0]
+	case geojson.GeometryLineString:
+		return f.Geometry.LineString[0]
+	case geojson.GeometryMultiLineString:
+		return f.Geometry.MultiLineString[0][0]
+	case geojson.GeometryPolygon:
+		return f.Geometry.Polygon[0][0]
+	case geojson.GeometryMultiPolygon:
+		return f.Geometry.MultiPolygon[0][0][0]
+	default:
+		return f.BoundingBox
+	}
 }

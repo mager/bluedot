@@ -86,32 +86,23 @@ func (h *Handler) saveFeatures(w http.ResponseWriter, r *http.Request) {
 	numPolygons := 0
 	numMultiPolygons := 0
 
-	for _, f := range features[10:13] {
+	for _, f := range features {
+		feature := firestore.Feature{}
 		geos := []firestore.Geometry{}
 		if f.Geometry.IsPolygon() {
-			pp.Print("Found a polygon!")
+			feature.Type = firestore.FeatureTypePolygon
 			feat := f.Geometry.Polygon
-			props := f.Properties
-			pp.Print("Properties:", props)
-			polyCoords := []float64{}
-			for i, p := range feat {
-				if i == 0 {
-					for _, c := range p {
-						polyCoords = append(polyCoords, c...)
-					}
-				} else {
-					pp.Print("TODO: Handle holes")
-				}
-			}
-			geos = append(geos, firestore.Geometry{
-				Coords: polyCoords,
-			})
+			geos = processPolygons(geos, feat)
 			numPolygons++
-			pp.Print("Coords for polygon:", polyCoords)
 		}
 
 		if f.Geometry.IsMultiPolygon() {
-			pp.Print("TODO: Handle MultiPolygon")
+			feature.Type = firestore.FeatureTypeMultiPolygon
+			feat := f.Geometry.MultiPolygon
+			for _, mp := range feat {
+				geos = processPolygons(geos, mp)
+			}
+
 			numMultiPolygons++
 		}
 
@@ -132,7 +123,7 @@ func (h *Handler) saveFeatures(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Look in the database to see if the signature exists
-		u := firestore.GetFeatureUUID(f.Properties)
+		u := firestore.GetFeatureUUID(f)
 
 		// First look for the feature by UUID
 		snap, err := h.Firestore.Collection("features").Doc(u.String()).Get(r.Context())
@@ -141,17 +132,12 @@ func (h *Handler) saveFeatures(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		pp.Print("Found feature by UUID:", snap.Exists())
-
 		// If the document already exists, then skip it
 		if !snap.Exists() {
 			// If the signature does not exist, then save the feature to Firestore
-			feature := firestore.Feature{
-				Dataset:    req.Dataset,
-				Type:       firestore.FeatureTypePolygon,
-				Properties: f.Properties,
-				Geometries: geos,
-			}
+			feature.Dataset = req.Dataset
+			feature.Properties = f.Properties
+			feature.Geometries = geos
 
 			_, err := h.Firestore.Collection("features").Doc(u.String()).Set(r.Context(), feature)
 			if err != nil {
@@ -159,13 +145,24 @@ func (h *Handler) saveFeatures(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-
 		pp.Println("Saved feature to Firestore!", f.Properties)
 	}
 
 	pp.Println("Number of polygons:", numPolygons)
 	pp.Println("Number of multi-polygons:", numMultiPolygons)
 	pp.Println("Number of features:", len(features))
+	featuresNotProcessed := len(features) - numPolygons - numMultiPolygons
+
+	// Return an error if there were unprocessed features
+	if len(features) == 0 {
+		http.Error(w, "No features were processed", http.StatusInternalServerError)
+		return
+	}
+
+	if featuresNotProcessed != 0 {
+		http.Error(w, "Some features were not processed", http.StatusInternalServerError)
+		return
+	}
 
 	resp.ID = "success"
 	// // Get the properties
@@ -201,4 +198,18 @@ func getPropertyName(prop map[string]interface{}) string {
 	}
 
 	return p
+}
+
+func processPolygons(geos []firestore.Geometry, feat [][][]float64) []firestore.Geometry {
+	polyCoords := []float64{}
+	for _, p := range feat {
+		for _, c := range p {
+			polyCoords = append(polyCoords, c...)
+		}
+	}
+	geos = append(geos, firestore.Geometry{
+		Coords: polyCoords,
+	})
+
+	return geos
 }

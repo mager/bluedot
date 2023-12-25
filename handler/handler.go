@@ -57,4 +57,5 @@ func (h *Handler) registerRoutes() {
 	h.Router.HandleFunc("/datasets/{username}/{slug}", h.deleteDataset).Methods("DELETE")
 	h.Router.HandleFunc("/datasets/{username}/{slug}/zip", h.downloadDatasetZip).Methods("GET")
 	h.Router.HandleFunc("/datasets/saveFeatures", h.saveFeatures).Methods("POST")
+	h.Router.HandleFunc("/datasets/deleteFeatures", h.deleteFeatures).Methods("POST")
 }
