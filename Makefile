@@ -5,6 +5,12 @@ dev:
 test:
 	go test ./...
 
+cover:
+	go install github.com/AlexBeauchemin/gobadge@latest
+	go test ./... -covermode=count -coverprofile=coverage.out fmt
+	go tool cover -func=coverage.out -o=coverage.out
+	$(HOME)/go/bin/gobadge -filename=coverage.out
+
 postman:
 	openapi2postmanv2 -s openapi.yaml -o collection.json
 

@@ -146,14 +146,14 @@ func GetFirstCoordinate(f *geojson.Feature) []float64 {
 	switch f.Geometry.Type {
 	case geojson.GeometryPoint:
 		return f.Geometry.Point
-	case geojson.GeometryMultiPoint:
-		return f.Geometry.MultiPoint[0]
 	case geojson.GeometryLineString:
 		return f.Geometry.LineString[0]
-	case geojson.GeometryMultiLineString:
-		return f.Geometry.MultiLineString[0][0]
 	case geojson.GeometryPolygon:
 		return f.Geometry.Polygon[0][0]
+	case geojson.GeometryMultiPoint:
+		return f.Geometry.MultiPoint[0]
+	case geojson.GeometryMultiLineString:
+		return f.Geometry.MultiLineString[0][0]
 	case geojson.GeometryMultiPolygon:
 		return f.Geometry.MultiPolygon[0][0][0]
 	default:

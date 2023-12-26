@@ -31,6 +31,26 @@ func Test_GetFirstCoordinate(t *testing.T) {
 			feat: geojson.NewFeature(geojson.NewPointGeometry([]float64{1, 2})),
 			want: []float64{1, 2},
 		},
+		{
+			name: "should return the first coordinate for a geojson.GeometryLineString",
+			feat: geojson.NewFeature(geojson.NewLineStringGeometry([][]float64{{1, 2}, {3, 4}})),
+			want: []float64{1, 2},
+		},
+		{
+			name: "should return the first coordinate for a geojson.GeometryPolygon",
+			feat: geojson.NewFeature(
+				geojson.NewPolygonGeometry(
+					[][][]float64{
+						{
+							{1, 2},
+							{3, 4},
+							{5, 6},
+						},
+					},
+				),
+			),
+			want: []float64{1, 2},
+		},
 	}
 
 	for _, tt := range tests {
