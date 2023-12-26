@@ -58,6 +58,7 @@ type Feature struct {
 	Type       int         `json:"type" firestore:"type"`
 	Properties interface{} `json:"properties" firestore:"properties"`
 	Geometries []Geometry  `json:"geometries" firestore:"geometries"`
+	Name       string      `json:"name" firestore:"name"`
 }
 
 type Geometry struct {
@@ -129,7 +130,7 @@ func GetFeatureUUID(f *geojson.Feature) uuid.UUID {
 	// Create a map of the feature properties and the first coordinate of the first geometry
 	data := map[string]interface{}{
 		"properties": f.Properties,
-		"firstCoord": getFirstCoordinate(f),
+		"firstCoord": GetFirstCoordinate(f),
 	}
 
 	// Serialize the map into a JSON string
@@ -140,7 +141,7 @@ func GetFeatureUUID(f *geojson.Feature) uuid.UUID {
 	return u
 }
 
-func getFirstCoordinate(f *geojson.Feature) []float64 {
+func GetFirstCoordinate(f *geojson.Feature) []float64 {
 	// Check feature type and return the first coordinate
 	switch f.Geometry.Type {
 	case geojson.GeometryPoint:

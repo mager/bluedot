@@ -1,5 +1,7 @@
 # bluedot
 
+![Coverage](https://img.shields.io/badge/Coverage-5.7%25-red)
+
 ## Development
 
 Runs on port 8085.

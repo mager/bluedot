@@ -20,7 +20,17 @@ type SaveFeaturesReq struct {
 }
 
 type SaveFeaturesResp struct {
-	ID string `json:"id"`
+	ID      string                `json:"id"`
+	Success bool                  `json:"success"`
+	Message string                `json:"message"`
+	Stats   SaveFeaturesRespStats `json:"stats"`
+}
+
+type SaveFeaturesRespStats struct {
+	NumFeatures             int `json:"numFeatures"`
+	NumPolygons             int `json:"numPolygons"`
+	NumMultiPolygons        int `json:"numMultiPolygons"`
+	NumFeaturesNotProcessed int `json:"numFeaturesNotProcessed"`
 }
 
 type SimplifyGeoJSONReq struct {
@@ -77,8 +87,6 @@ func (h *Handler) saveFeatures(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	pp.Println(dataset.Data())
 
 	features := fc.Features
 	pp.Print("Found ", len(features), " features")
@@ -138,6 +146,7 @@ func (h *Handler) saveFeatures(w http.ResponseWriter, r *http.Request) {
 			feature.Dataset = req.Dataset
 			feature.Properties = f.Properties
 			feature.Geometries = geos
+			feature.Name = getPropertyName(f.Properties)
 
 			_, err := h.Firestore.Collection("features").Doc(u.String()).Set(r.Context(), feature)
 			if err != nil {
@@ -148,53 +157,47 @@ func (h *Handler) saveFeatures(w http.ResponseWriter, r *http.Request) {
 		pp.Println("Saved feature to Firestore!", f.Properties)
 	}
 
-	pp.Println("Number of polygons:", numPolygons)
-	pp.Println("Number of multi-polygons:", numMultiPolygons)
-	pp.Println("Number of features:", len(features))
-	featuresNotProcessed := len(features) - numPolygons - numMultiPolygons
+	numFeaturesNotProcessed := len(features) - numPolygons - numMultiPolygons
+	resp.Stats = SaveFeaturesRespStats{
+		NumFeatures:             len(features),
+		NumPolygons:             numPolygons,
+		NumMultiPolygons:        numMultiPolygons,
+		NumFeaturesNotProcessed: numFeaturesNotProcessed,
+	}
+
+	// Handle response
+	w.Header().Set("Content-Type", "application/json")
+	resp.Success = true
+	resp.ID = dataset.Ref.ID
+	w.WriteHeader(http.StatusOK)
 
 	// Return an error if there were unprocessed features
 	if len(features) == 0 {
-		http.Error(w, "No features were processed", http.StatusInternalServerError)
-		return
+		resp.Message = "No features were processed"
+		resp.Success = false
 	}
 
-	if featuresNotProcessed != 0 {
-		http.Error(w, "Some features were not processed", http.StatusInternalServerError)
-		return
+	if numFeaturesNotProcessed != 0 {
+		resp.Message = "Some features were not processed"
+		resp.Success = false
 	}
-
-	resp.ID = "success"
-	// // Get the properties
-	// props := f.Properties
-
-	// // Get the geometry
-	// geom := f.Geometry
-
-	// // Print the properties and geometry
-	// fmt.Printf("properties: %v\n", props)
-	// fmt.Printf("geometry: %v\n", geom)
-
-	w.Header().Set("Content-Type", "application/json")
 
 	// Write the response
-	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(resp)
 }
 
 func getPropertyName(prop map[string]interface{}) string {
-	p := ""
+	var p string
 
-	if name, ok := prop["name"]; ok {
-		p = name.(string)
-	}
+	// List of possible keys for the property name
+	keys := []string{"name", "NAME", "Name"}
 
-	if name, ok := prop["NAME"]; ok {
-		p = name.(string)
-	}
-
-	if name, ok := prop["Name"]; ok {
-		p = name.(string)
+	// Iterate through the keys and update the property name if found
+	for _, key := range keys {
+		if name, ok := prop[key]; ok {
+			p = name.(string)
+			break
+		}
 	}
 
 	return p
