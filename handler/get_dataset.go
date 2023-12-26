@@ -76,6 +76,7 @@ func (h *Handler) getDataset(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get features from Firestore
+	feats := []*geojson.Feature{}
 	features, err := h.Firestore.Collection("features").Where("dataset", "==", resp.ID).Documents(context.Background()).GetAll()
 	if err != nil {
 		h.Logger.Errorf("Error fetching features from Firestore: %s", err)
@@ -96,8 +97,12 @@ func (h *Handler) getDataset(w http.ResponseWriter, r *http.Request) {
 		feature.Type = getFeatureType(featStruct.Type)
 		feature.Geometry = getGeometry(featStruct)
 		feature.Properties = f.Data()["properties"].(map[string]interface{})
-		resp.Features = append(resp.Features, &feature)
+		feats = append(feats, &feature)
 	}
+
+	fc := geojson.NewFeatureCollection()
+	fc.Features = feats
+	resp.Geojson = fc
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(resp)
