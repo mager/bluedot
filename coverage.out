@@ -2,6 +2,6 @@ github.com/mager/bluedot/firestore/firestore.go:18:	ProvideFirestore	0.0%
 github.com/mager/bluedot/firestore/firestore.go:86:	DatasetTypeNameToValue	0.0%
 github.com/mager/bluedot/firestore/firestore.go:99:	DatasetTypeValueToName	0.0%
 github.com/mager/bluedot/firestore/firestore.go:112:	GenerateDocumentID	0.0%
-github.com/mager/bluedot/firestore/firestore.go:129:	GetFeatureUUID		0.0%
-github.com/mager/bluedot/firestore/firestore.go:144:	GetFirstCoordinate	50.0%
-total:							(statements)		11.4%
+github.com/mager/bluedot/firestore/firestore.go:129:	GetFeatureUUID		100.0%
+github.com/mager/bluedot/firestore/firestore.go:144:	GetFirstCoordinate	100.0%
+total:							(statements)		32.4%

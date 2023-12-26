@@ -1,6 +1,6 @@
 # bluedot
 
-![Coverage](https://img.shields.io/badge/Coverage-11.4%25-red)
+![Coverage](https://img.shields.io/badge/Coverage-32.4%25-yellow)
 
 ## Development
 
@@ -42,4 +42,11 @@ make deploy
 
 ```sh
 make postman
+```
+
+### Run tests and coverage badge
+
+```sh
+make test
+make cover
 ```

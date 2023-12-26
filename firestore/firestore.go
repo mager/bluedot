@@ -144,8 +144,6 @@ func GetFeatureUUID(f *geojson.Feature) uuid.UUID {
 func GetFirstCoordinate(f *geojson.Feature) []float64 {
 	// Check feature type and return the first coordinate
 	switch f.Geometry.Type {
-	case geojson.GeometryPoint:
-		return f.Geometry.Point
 	case geojson.GeometryLineString:
 		return f.Geometry.LineString[0]
 	case geojson.GeometryPolygon:
@@ -157,6 +155,6 @@ func GetFirstCoordinate(f *geojson.Feature) []float64 {
 	case geojson.GeometryMultiPolygon:
 		return f.Geometry.MultiPolygon[0][0][0]
 	default:
-		return f.BoundingBox
+		return f.Geometry.Point
 	}
 }
