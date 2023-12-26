@@ -89,7 +89,6 @@ func (h *Handler) saveFeatures(w http.ResponseWriter, r *http.Request) {
 	}
 
 	features := fc.Features
-	pp.Print("Found ", len(features), " features")
 
 	numPolygons := 0
 	numMultiPolygons := 0
@@ -100,7 +99,7 @@ func (h *Handler) saveFeatures(w http.ResponseWriter, r *http.Request) {
 		if f.Geometry.IsPolygon() {
 			feature.Type = firestore.FeatureTypePolygon
 			feat := f.Geometry.Polygon
-			geos = processPolygons(geos, feat)
+			geos = ProcessPolygons(geos, feat)
 			numPolygons++
 		}
 
@@ -108,7 +107,7 @@ func (h *Handler) saveFeatures(w http.ResponseWriter, r *http.Request) {
 			feature.Type = firestore.FeatureTypeMultiPolygon
 			feat := f.Geometry.MultiPolygon
 			for _, mp := range feat {
-				geos = processPolygons(geos, mp)
+				geos = ProcessPolygons(geos, mp)
 			}
 
 			numMultiPolygons++
@@ -140,13 +139,11 @@ func (h *Handler) saveFeatures(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// If the document already exists, then skip it
 		if !snap.Exists() {
-			// If the signature does not exist, then save the feature to Firestore
 			feature.Dataset = req.Dataset
-			feature.Properties = f.Properties
 			feature.Geometries = geos
-			feature.Name = getPropertyName(f.Properties)
+			feature.Name = GetPropertyName(f.Properties)
+			feature.Properties = f.Properties
 
 			_, err := h.Firestore.Collection("features").Doc(u.String()).Set(r.Context(), feature)
 			if err != nil {
@@ -186,7 +183,7 @@ func (h *Handler) saveFeatures(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func getPropertyName(prop map[string]interface{}) string {
+func GetPropertyName(prop map[string]interface{}) string {
 	var p string
 
 	// List of possible keys for the property name
@@ -203,7 +200,7 @@ func getPropertyName(prop map[string]interface{}) string {
 	return p
 }
 
-func processPolygons(geos []firestore.Geometry, feat [][][]float64) []firestore.Geometry {
+func ProcessPolygons(geos []firestore.Geometry, feat [][][]float64) []firestore.Geometry {
 	polyCoords := []float64{}
 	for _, p := range feat {
 		for _, c := range p {

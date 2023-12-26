@@ -1,6 +1,6 @@
 # bluedot
 
-![Coverage](https://img.shields.io/badge/Coverage-32.4%25-yellow)
+![Coverage](https://img.shields.io/badge/Coverage-7.6%25-red)
 
 ## Development
 

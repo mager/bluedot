@@ -2,12 +2,8 @@ package firestore
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"log"
-	"time"
 
 	"cloud.google.com/go/firestore"
 	"github.com/google/uuid"
@@ -83,19 +79,6 @@ const (
 	DatasetTypeNameShapefile = "shapefile"
 )
 
-func DatasetTypeNameToValue(typeName string) int {
-	switch typeName {
-	case DatasetTypeNameGeopackage:
-		return DatasetTypeGeopackage
-	case DatasetTypeNameGeojson:
-		return DatasetTypeGeojson
-	case DatasetTypeNameShapefile:
-		return DatasetTypeShapefile
-	default:
-		return DatasetTypeValueUnknown
-	}
-}
-
 func DatasetTypeValueToName(typeValue int) string {
 	switch typeValue {
 	case DatasetTypeGeopackage:
@@ -107,23 +90,6 @@ func DatasetTypeValueToName(typeValue int) string {
 	default:
 		return ""
 	}
-}
-
-func GenerateDocumentID(name string) string {
-	// Generate a random number between 0 and 2^31
-	randomBytes := make([]byte, 4)
-	_, err := rand.Read(randomBytes)
-	if err != nil {
-		panic(err)
-	}
-	randomNumber := uint32(binary.BigEndian.Uint32(randomBytes))
-
-	// Generate a timestamp in milliseconds
-	timestamp := uint32(time.Now().UnixNano() / 1000000)
-
-	// Combine the timestamp and random number to generate the document ID
-	prefix := fmt.Sprintf("%010d%08x", timestamp, randomNumber)
-	return prefix + name
 }
 
 func GetFeatureUUID(f *geojson.Feature) uuid.UUID {

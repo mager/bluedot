@@ -5,6 +5,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/google/go-github/v56/github"
+	geojson "github.com/paulmach/go.geojson"
 	"go.uber.org/zap"
 )
 
@@ -25,6 +26,8 @@ type DatasetResp struct {
 
 	Image string        `json:"image"`
 	Types []DatasetType `json:"types"`
+
+	Features []*geojson.Feature `json:"features"`
 }
 
 type DatasetType struct {

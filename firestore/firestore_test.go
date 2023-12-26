@@ -182,3 +182,42 @@ func Test_GetFeatureUUID(t *testing.T) {
 		})
 	}
 }
+
+func Test_DatasetTypeValueToName(t *testing.T) {
+	tests := []struct {
+		name string
+		arg  int
+		want string
+	}{
+		{
+			name: "should return the name of the dataset type",
+			arg:  1,
+			want: "geopackage",
+		},
+		{
+			name: "should return the name of the dataset type",
+			arg:  2,
+			want: "geojson",
+		},
+		{
+			name: "should return the name of the dataset type",
+			arg:  3,
+			want: "shapefile",
+		},
+		{
+			name: "should return an empty string",
+			arg:  4,
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := DatasetTypeValueToName(tt.arg)
+
+			if got != tt.want {
+				t.Errorf("DatasetTypeValueToName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
