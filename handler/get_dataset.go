@@ -83,7 +83,7 @@ func (h *Handler) getDataset(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error fetching features from Firestore", http.StatusInternalServerError)
 		return
 	}
-	for _, f := range features[43:44] {
+	for _, f := range features {
 		featStruct := fs.Feature{}
 		err := f.DataTo(&featStruct)
 		if err != nil {
@@ -176,13 +176,23 @@ func getGeometry(feat fs.Feature) *geojson.Geometry {
 		geometry.Geometries = append(geometry.Geometries, geojson.NewMultiLineStringGeometry(g...))
 		geometry.MultiLineString = g
 	case fs.FeatureTypeMultiPolygon:
-		g := [][][][]float64{}
-		for _, geo := range geos {
-			g = append(g, [][][]float64{[][]float64{geo.Coords}})
+		mp := make([][][][]float64, 0)
+		for _, g := range geos {
+			coords := make([][][]float64, 1)
+			ring := make([][]float64, 0)
+
+			for i := 0; i < len(g.Coords); i += 2 {
+				pair := []float64{g.Coords[i], g.Coords[i+1]}
+				ring = append(ring, pair)
+			}
+
+			coords[0] = ring
+			mp = append(mp, coords)
 		}
+
 		geometry.Type = geojson.GeometryMultiPolygon
-		geometry.Geometries = append(geometry.Geometries, geojson.NewMultiPolygonGeometry(g...))
-		geometry.MultiPolygon = g
+		geometry.Geometries = append(geometry.Geometries, geojson.NewMultiPolygonGeometry(mp...))
+		geometry.MultiPolygon = mp
 	default:
 		geometry.Type = geojson.GeometryCollection
 	}
