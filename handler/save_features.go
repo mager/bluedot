@@ -3,7 +3,7 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 
@@ -40,10 +40,6 @@ type SimplifyGeoJSONReq struct {
 	URL     string `json:"url"`
 }
 
-const (
-	tellusRespStatusSuccess = "success"
-)
-
 func (h *Handler) saveFeatures(w http.ResponseWriter, r *http.Request) {
 	var req SaveFeaturesReq
 	var resp SaveFeaturesResp
@@ -53,35 +49,7 @@ func (h *Handler) saveFeatures(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p := "https://tellus-zhokjvjava-uc.a.run.app/api/simplify/geojson"
-	tellusReqBody := []byte(`{"url": "` + req.URL + `"}`)
-	// Create a new HTTP request with the PUT method
-	tellusResp, err := http.Post(p, "application/json", bytes.NewBuffer(tellusReqBody))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Close the response body
-	defer tellusResp.Body.Close()
-
-	body, err := ioutil.ReadAll(tellusResp.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	var raw json.RawMessage
-	err = json.Unmarshal(body, &raw)
-	if err != nil {
-		panic(err)
-	}
-
-	// Convert raw JSON to string
-	jsonString := string(raw)
-	fc, err := geojson.UnmarshalFeatureCollection([]byte(jsonString))
-	if err != nil {
-		panic(err)
-	}
+	fc := getGeoJSONFromZipURL(req.URL)
 
 	// Fetch the dataset from Firestore
 	dataset, err := h.Firestore.Collection("datasets").Doc(req.Dataset).Get(r.Context())
@@ -338,4 +306,36 @@ func (h *Handler) calculateCentroid(fc *geojson.FeatureCollection) [2]float64 {
 	centroid[1] = sumY / float64(len(coords)/2)
 
 	return centroid
+}
+
+func getGeoJSONFromZipURL(url string) *geojson.FeatureCollection {
+	tellusURL := "https://tellus-zhokjvjava-uc.a.run.app/api/simplify/geojson"
+	tellusReqBody := []byte(`{"url": "` + url + `"}`)
+	// Create a new HTTP request with the PUT method
+	tellusResp, err := http.Post(tellusURL, "application/json", bytes.NewBuffer(tellusReqBody))
+	if err != nil {
+		panic(err)
+	}
+
+	// Close the response body
+	defer tellusResp.Body.Close()
+
+	body, err := io.ReadAll(tellusResp.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	var raw json.RawMessage
+	err = json.Unmarshal(body, &raw)
+	if err != nil {
+		panic(err)
+	}
+
+	// Convert raw JSON to string
+	jsonString := string(raw)
+	fc, err := geojson.UnmarshalFeatureCollection([]byte(jsonString))
+	if err != nil {
+		panic(err)
+	}
+	return fc
 }
