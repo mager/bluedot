@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	fs "cloud.google.com/go/firestore"
 	"github.com/k0kubun/pp"
 	"github.com/mager/bluedot/firestore"
 	"google.golang.org/grpc/codes"
@@ -151,7 +152,6 @@ func (h *Handler) saveFeatures(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		pp.Println("Saved feature to Firestore!", f.Properties)
 	}
 
 	numFeaturesNotProcessed := len(features) - numPolygons - numMultiPolygons
@@ -160,6 +160,18 @@ func (h *Handler) saveFeatures(w http.ResponseWriter, r *http.Request) {
 		NumPolygons:             numPolygons,
 		NumMultiPolygons:        numMultiPolygons,
 		NumFeaturesNotProcessed: numFeaturesNotProcessed,
+	}
+
+	// Update bounding box on the dataset
+	_, err = h.Firestore.Collection("datasets").Doc(req.Dataset).Update(r.Context(), []fs.Update{
+		{
+			Path:  "bbox",
+			Value: calculateBoundingBox(fc),
+		},
+	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	// Handle response

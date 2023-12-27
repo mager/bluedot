@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -198,4 +199,68 @@ func getGeometry(feat fs.Feature) *geojson.Geometry {
 	}
 
 	return geometry
+}
+func calculateBoundingBox(fc *geojson.FeatureCollection) [4]float64 {
+	var bbox [4]float64
+
+	coords := make([]float64, 0)
+	for _, feature := range fc.Features {
+		geom := feature.Geometry
+		switch geom.Type {
+		case geojson.GeometryPoint:
+			coords = append(coords, geom.Point...)
+		case geojson.GeometryPolygon:
+			c := geom.Polygon[0]
+			for _, coord := range c {
+				coords = append(coords, coord...)
+			}
+		case geojson.GeometryMultiPolygon:
+			c := geom.MultiPolygon[0][0]
+			for _, coord := range c {
+				coords = append(coords, coord...)
+			}
+		case geojson.GeometryLineString:
+		case geojson.GeometryMultiPoint:
+		case geojson.GeometryMultiLineString:
+		case geojson.GeometryCollection:
+			log.Println("TODO: Handle GeometryCollection")
+		default:
+			log.Println("Unknown geometry type")
+		}
+	}
+
+	// Find the bounding box
+	minX := coords[0]
+	minY := coords[1]
+	maxX := coords[0]
+	maxY := coords[1]
+
+	for i := 0; i < len(coords); i += 2 {
+		x := coords[i]
+		y := coords[i+1]
+
+		if x < minX {
+			minX = x
+		}
+
+		if y < minY {
+			minY = y
+		}
+
+		if x > maxX {
+			maxX = x
+		}
+
+		if y > maxY {
+			maxY = y
+		}
+
+	}
+
+	bbox[0] = minX
+	bbox[1] = minY
+	bbox[2] = maxX
+	bbox[3] = maxY
+
+	return bbox
 }
