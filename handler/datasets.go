@@ -27,7 +27,9 @@ type DatasetResp struct {
 	Image string        `json:"image"`
 	Types []DatasetType `json:"types"`
 
-	Geojson *geojson.FeatureCollection `json:"geojson"`
+	Geojson  *geojson.FeatureCollection `json:"geojson"`
+	Centroid []float64                  `json:"centroid"`
+	Bbox     []float64                  `json:"bbox"`
 }
 
 type DatasetType struct {

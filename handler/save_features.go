@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	fs "cloud.google.com/go/firestore"
@@ -162,11 +163,15 @@ func (h *Handler) saveFeatures(w http.ResponseWriter, r *http.Request) {
 		NumFeaturesNotProcessed: numFeaturesNotProcessed,
 	}
 
-	// Update bounding box on the dataset
+	// Update bounding box and centroid on the dataset
 	_, err = h.Firestore.Collection("datasets").Doc(req.Dataset).Update(r.Context(), []fs.Update{
 		{
 			Path:  "bbox",
-			Value: calculateBoundingBox(fc),
+			Value: h.calculateBoundingBox(fc),
+		},
+		{
+			Path:  "centroid",
+			Value: h.calculateCentroid(fc),
 		},
 	})
 	if err != nil {
@@ -224,4 +229,113 @@ func ProcessPolygons(geos []firestore.Geometry, feat [][][]float64) []firestore.
 	})
 
 	return geos
+}
+
+func (h *Handler) calculateBoundingBox(fc *geojson.FeatureCollection) [4]float64 {
+	var bbox [4]float64
+
+	coords := make([]float64, 0)
+	for _, feature := range fc.Features {
+		geom := feature.Geometry
+		switch geom.Type {
+		case geojson.GeometryPoint:
+			coords = append(coords, geom.Point...)
+		case geojson.GeometryPolygon:
+			c := geom.Polygon[0]
+			for _, coord := range c {
+				coords = append(coords, coord...)
+			}
+		case geojson.GeometryMultiPolygon:
+			c := geom.MultiPolygon[0][0]
+			for _, coord := range c {
+				coords = append(coords, coord...)
+			}
+		case geojson.GeometryLineString:
+		case geojson.GeometryMultiPoint:
+		case geojson.GeometryMultiLineString:
+		case geojson.GeometryCollection:
+			h.Logger.Info("TODO: Handle GeometryCollection")
+		default:
+			h.Logger.Info("Unknown geometry type")
+		}
+	}
+
+	// Find the bounding box
+	minX := coords[0]
+	minY := coords[1]
+	maxX := coords[0]
+	maxY := coords[1]
+
+	for i := 0; i < len(coords); i += 2 {
+		x := coords[i]
+		y := coords[i+1]
+
+		if x < minX {
+			minX = x
+		}
+
+		if y < minY {
+			minY = y
+		}
+
+		if x > maxX {
+			maxX = x
+		}
+
+		if y > maxY {
+			maxY = y
+		}
+
+	}
+
+	bbox[0] = minX
+	bbox[1] = minY
+	bbox[2] = maxX
+	bbox[3] = maxY
+
+	return bbox
+}
+
+func (h *Handler) calculateCentroid(fc *geojson.FeatureCollection) [2]float64 {
+	var centroid [2]float64
+
+	coords := make([]float64, 0)
+	for _, feature := range fc.Features {
+		geom := feature.Geometry
+		switch geom.Type {
+		case geojson.GeometryPoint:
+			coords = append(coords, geom.Point...)
+		case geojson.GeometryPolygon:
+			c := geom.Polygon[0]
+			for _, coord := range c {
+				coords = append(coords, coord...)
+			}
+		case geojson.GeometryMultiPolygon:
+			c := geom.MultiPolygon[0][0]
+			for _, coord := range c {
+				coords = append(coords, coord...)
+			}
+		case geojson.GeometryLineString:
+		case geojson.GeometryMultiPoint:
+		case geojson.GeometryMultiLineString:
+		case geojson.GeometryCollection:
+			log.Println("TODO: Handle GeometryCollection")
+		default:
+			log.Println("Unknown geometry type")
+		}
+	}
+
+	var sumX float64
+	var sumY float64
+	for i := 0; i < len(coords); i += 2 {
+		x := coords[i]
+		y := coords[i+1]
+		sumX += x
+		sumY += y
+	}
+
+	centroid[0] = sumX / float64(len(coords)/2)
+	centroid[1] = sumY / float64(len(coords)/2)
+
+	return centroid
 }

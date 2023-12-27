@@ -24,4 +24,6 @@ type Dataset struct {
 	Description sql.NullString
 	Created     sql.NullTime
 	Updated     sql.NullTime
+	Centroid    []float64
+	Bbox        []float64
 }
