@@ -325,15 +325,7 @@ func getGeoJSONFromZipURL(url string) *geojson.FeatureCollection {
 		panic(err)
 	}
 
-	var raw json.RawMessage
-	err = json.Unmarshal(body, &raw)
-	if err != nil {
-		panic(err)
-	}
-
-	// Convert raw JSON to string
-	jsonString := string(raw)
-	fc, err := geojson.UnmarshalFeatureCollection([]byte(jsonString))
+	fc, err := geojson.UnmarshalFeatureCollection(body)
 	if err != nil {
 		panic(err)
 	}
