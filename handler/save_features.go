@@ -308,19 +308,71 @@ func (h *Handler) calculateCentroid(fc *geojson.FeatureCollection) [2]float64 {
 	return centroid
 }
 
+type PtolemyGeojsonReq struct {
+	URL     string                `json:"url"`
+	From    string                `json:"from"`
+	Options PtolemyGeojsonOptions `json:"options"`
+}
+
+type PtolemyGeojsonOptions struct {
+	Simplify PtolemyGeojsonOptionsSimplify `json:"simplify"`
+}
+
+type PtolemyGeojsonOptionsSimplify struct {
+	Tolerance float64 `json:"tolerance"`
+}
+
 func getGeoJSONFromZipURL(url string) *geojson.FeatureCollection {
-	tellusURL := "https://tellus-zhokjvjava-uc.a.run.app/api/simplify/geojson"
-	tellusReqBody := []byte(`{"url": "` + url + `"}`)
-	// Create a new HTTP request with the PUT method
-	tellusResp, err := http.Post(tellusURL, "application/json", bytes.NewBuffer(tellusReqBody))
+	ptolemyURL := "http://localhost:3005/api/geojson"
+	// ptolemyURL := "https://ptolemy-zhokjvjava-uc.a.run.app/api/geojson"
+	PtolemyGeojsonReqBody := PtolemyGeojsonReq{
+		URL:  url,
+		From: "shapefile",
+		Options: PtolemyGeojsonOptions{
+			Simplify: PtolemyGeojsonOptionsSimplify{
+				Tolerance: 0.1,
+			},
+		},
+	}
+
+	// Convert the request body to JSON
+	ptolemyReqBody, err := json.Marshal(PtolemyGeojsonReqBody)
+	if err != nil {
+		panic(err)
+	}
+
+	reqBody := bytes.NewBuffer(ptolemyReqBody)
+	pp.Print(reqBody)
+	ptolemyResp, err := http.Post(ptolemyURL, "application/json", reqBody)
 	if err != nil {
 		panic(err)
 	}
 
 	// Close the response body
-	defer tellusResp.Body.Close()
+	defer ptolemyResp.Body.Close()
 
-	body, err := io.ReadAll(tellusResp.Body)
+	// If not 200, return an error
+	if ptolemyResp.StatusCode != http.StatusOK {
+		// Print the response body
+		body, err := io.ReadAll(ptolemyResp.Body)
+		if err != nil {
+			panic(err)
+		}
+		panic(string(body))
+	}
+
+	body, err := io.ReadAll(ptolemyResp.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	type PtolemyGeojsonRespErr struct {
+		Status  string `json:"status"`
+		Message string `json:"message"`
+	}
+
+	var ptolemyGeojsonRespErr PtolemyGeojsonRespErr
+	err = json.Unmarshal(body, &ptolemyGeojsonRespErr)
 	if err != nil {
 		panic(err)
 	}
