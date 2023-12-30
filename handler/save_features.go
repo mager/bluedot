@@ -323,14 +323,13 @@ type PtolemyGeojsonOptionsSimplify struct {
 }
 
 func getGeoJSONFromZipURL(url string) *geojson.FeatureCollection {
-	ptolemyURL := "http://localhost:3005/api/geojson"
-	// ptolemyURL := "https://ptolemy-zhokjvjava-uc.a.run.app/api/geojson"
+	ptolemyURL := "https://ptolemy-zhokjvjava-uc.a.run.app/api/geojson"
 	PtolemyGeojsonReqBody := PtolemyGeojsonReq{
 		URL:  url,
 		From: "shapefile",
 		Options: PtolemyGeojsonOptions{
 			Simplify: PtolemyGeojsonOptionsSimplify{
-				Tolerance: 0.1,
+				Tolerance: 0.05,
 			},
 		},
 	}
@@ -342,7 +341,6 @@ func getGeoJSONFromZipURL(url string) *geojson.FeatureCollection {
 	}
 
 	reqBody := bytes.NewBuffer(ptolemyReqBody)
-	pp.Print(reqBody)
 	ptolemyResp, err := http.Post(ptolemyURL, "application/json", reqBody)
 	if err != nil {
 		panic(err)
