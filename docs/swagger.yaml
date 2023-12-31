@@ -1,0 +1,417 @@
+basePath: /api
+definitions:
+  github_com_paulmach_go_geojson.Feature:
+    properties:
+      bbox:
+        items:
+          type: number
+        type: array
+      crs:
+        additionalProperties: true
+        description: Coordinate Reference System Objects are not currently supported
+        type: object
+      geometry:
+        $ref: '#/definitions/github_com_paulmach_go_geojson.Geometry'
+      id: {}
+      properties:
+        additionalProperties: true
+        type: object
+      type:
+        type: string
+    type: object
+  github_com_paulmach_go_geojson.FeatureCollection:
+    properties:
+      bbox:
+        items:
+          type: number
+        type: array
+      crs:
+        additionalProperties: true
+        description: Coordinate Reference System Objects are not currently supported
+        type: object
+      features:
+        items:
+          $ref: '#/definitions/github_com_paulmach_go_geojson.Feature'
+        type: array
+      type:
+        type: string
+    type: object
+  github_com_paulmach_go_geojson.Geometry:
+    properties:
+      bbox:
+        items:
+          type: number
+        type: array
+      crs:
+        additionalProperties: true
+        description: Coordinate Reference System Objects are not currently supported
+        type: object
+      geometries:
+        items:
+          $ref: '#/definitions/github_com_paulmach_go_geojson.Geometry'
+        type: array
+      lineString:
+        items:
+          items:
+            type: number
+          type: array
+        type: array
+      multiLineString:
+        items:
+          items:
+            items:
+              type: number
+            type: array
+          type: array
+        type: array
+      multiPoint:
+        items:
+          items:
+            type: number
+          type: array
+        type: array
+      multiPolygon:
+        items:
+          items:
+            items:
+              items:
+                type: number
+              type: array
+            type: array
+          type: array
+        type: array
+      point:
+        items:
+          type: number
+        type: array
+      polygon:
+        items:
+          items:
+            items:
+              type: number
+            type: array
+          type: array
+        type: array
+      type:
+        $ref: '#/definitions/github_com_paulmach_go_geojson.GeometryType'
+    type: object
+  github_com_paulmach_go_geojson.GeometryType:
+    enum:
+    - Point
+    - MultiPoint
+    - LineString
+    - MultiLineString
+    - Polygon
+    - MultiPolygon
+    - GeometryCollection
+    type: string
+    x-enum-varnames:
+    - GeometryPoint
+    - GeometryMultiPoint
+    - GeometryLineString
+    - GeometryMultiLineString
+    - GeometryPolygon
+    - GeometryMultiPolygon
+    - GeometryCollection
+  handler.DatasetResp:
+    properties:
+      bbox:
+        items:
+          type: number
+        type: array
+      centroid:
+        items:
+          type: number
+        type: array
+      createdAt:
+        type: string
+      description:
+        type: string
+      error:
+        type: string
+      geojson:
+        $ref: '#/definitions/github_com_paulmach_go_geojson.FeatureCollection'
+      id:
+        type: string
+      image:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+      source:
+        type: string
+      types:
+        items:
+          $ref: '#/definitions/handler.DatasetType'
+        type: array
+      updatedAt:
+        type: string
+      user:
+        properties:
+          image:
+            type: string
+          slug:
+            type: string
+        type: object
+      userId:
+        type: string
+    type: object
+  handler.DatasetType:
+    properties:
+      name:
+        type: string
+    type: object
+  handler.Datasets:
+    properties:
+      id:
+        type: string
+      image:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
+  handler.DatasetsResp:
+    properties:
+      datasets:
+        items:
+          $ref: '#/definitions/handler.Datasets'
+        type: array
+    type: object
+  handler.DeleteFeaturesReq:
+    properties:
+      dataset:
+        type: string
+    type: object
+  handler.ErrorResp:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+host: api.geotory.com
+info:
+  contact:
+    email: magerleagues@gmail.com
+    name: '@mager'
+    url: https://geotory.com
+  description: Primary backend for Geotory
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Bluedot
+  version: "1.0"
+paths:
+  /datasets/{username}:
+    get:
+      consumes:
+      - application/json
+      description: Fetch datasets from a given user
+      operationId: get-datasets
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.DatasetsResp'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResp'
+      summary: Get all datasets for a user
+      tags:
+      - dataset
+  /datasets/{username}/{slug}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a dataset
+      operationId: delete-dataset
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.DatasetResp'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResp'
+      summary: Delete a dataset
+      tags:
+      - dataset
+    get:
+      consumes:
+      - application/json
+      description: Fetch details about a dataset
+      operationId: get-dataset
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.DatasetResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResp'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResp'
+      summary: Get a dataset
+      tags:
+      - dataset
+    put:
+      consumes:
+      - application/json
+      description: Syncing a dataset
+      operationId: sync-dataset
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.DatasetResp'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResp'
+      summary: Sync a dataset
+      tags:
+      - dataset
+  /datasets/{username}/{slug}/deleteFeatures:
+    post:
+      consumes:
+      - application/json
+      description: Delete features for a given dataset
+      operationId: delete-features
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Delete Features Req
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.DeleteFeaturesReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.DatasetResp'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResp'
+      summary: Delete features
+      tags:
+      - dataset
+  /datasets/{username}/{slug}/zip:
+    get:
+      description: Download a dataset as a zip file
+      operationId: download-dataset-zip
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/zip
+      responses:
+        "200":
+          description: OK
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResp'
+      summary: Download a dataset as a zip file
+      tags:
+      - dataset
+swagger: "2.0"

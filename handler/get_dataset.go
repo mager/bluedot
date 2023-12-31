@@ -11,7 +11,21 @@ import (
 	geojson "github.com/paulmach/go.geojson"
 )
 
-// ServeHTTP handles an HTTP requests.
+// getDataset godoc
+//
+//	@Summary		Get a dataset
+//	@Description	Fetch details about a dataset
+//	@ID				get-dataset
+//	@Tags			dataset
+//	@Accept			json
+//	@Produce		json
+//	@Param			username	path	string	true	"Username"
+//	@Param			slug		path	string	true	"Slug"
+//	@Success		200	{object}	DatasetResp
+//	@Failure		400	{object}	ErrorResp
+//	@Failure		404	{object}	ErrorResp
+//	@Failure		500	{object}	ErrorResp
+//	@Router			/datasets/{username}/{slug} [get]
 func (h *Handler) getDataset(w http.ResponseWriter, r *http.Request) {
 	resp := DatasetResp{}
 	vars := mux.Vars(r)
@@ -20,13 +34,13 @@ func (h *Handler) getDataset(w http.ResponseWriter, r *http.Request) {
 
 	user := db.GetUserByUsername(h.Database, username)
 	if user.ID == "" {
-		http.Error(w, "User not found", http.StatusNotFound)
+		h.sendErrorJSON(w, http.StatusNotFound, "User not found")
 		return
 	}
 
 	dataset := db.GetDatasetByUserIdAndSlug(h.Database, user.ID, datasetSlug)
 	if dataset.ID == "" {
-		http.Error(w, "Dataset not found", http.StatusNotFound)
+		h.sendErrorJSON(w, http.StatusNotFound, "Dataset not found")
 		return
 	}
 
@@ -55,7 +69,7 @@ func (h *Handler) getDataset(w http.ResponseWriter, r *http.Request) {
 	doc, err := h.Firestore.Collection("datasets").Doc(resp.ID).Get(context.Background())
 	if err != nil {
 		h.Logger.Errorf("Error fetching Firestore record: %s", err)
-		http.Error(w, "Error fetching Firestore record", http.StatusInternalServerError)
+		h.sendErrorJSON(w, http.StatusInternalServerError, "Error fetching Firestore record")
 		return
 	}
 
@@ -96,7 +110,7 @@ func (h *Handler) getDataset(w http.ResponseWriter, r *http.Request) {
 	features, err := h.Firestore.Collection("features").Where("dataset", "==", resp.ID).Documents(context.Background()).GetAll()
 	if err != nil {
 		h.Logger.Errorf("Error fetching features from Firestore: %s", err)
-		http.Error(w, "Error fetching features from Firestore", http.StatusInternalServerError)
+		h.sendErrorJSON(w, http.StatusInternalServerError, "Error fetching features from Firestore")
 		return
 	}
 	for _, f := range features {
@@ -104,7 +118,7 @@ func (h *Handler) getDataset(w http.ResponseWriter, r *http.Request) {
 		err := f.DataTo(&featStruct)
 		if err != nil {
 			h.Logger.Errorf("Error converting Firestore data to struct: %s", err)
-			http.Error(w, "Error converting Firestore data to struct", http.StatusInternalServerError)
+			h.sendErrorJSON(w, http.StatusInternalServerError, "Error converting Firestore data to struct")
 			return
 		}
 

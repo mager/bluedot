@@ -18,6 +18,20 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// syncDataset godoc
+//
+//	@Summary		Sync a dataset
+//	@Description	Syncing a dataset
+//	@ID				sync-dataset
+//	@Tags			dataset
+//	@Accept			json
+//	@Produce		json
+//	@Param			username	path	string	true	"Username"
+//	@Param			slug		path	string	true	"Slug"
+//	@Success		200	{object}	DatasetResp
+//	@Failure		404	{object}	ErrorResp
+//	@Failure		500	{object}	ErrorResp
+//	@Router			/datasets/{username}/{slug} [put]
 func (h *Handler) syncDataset(w http.ResponseWriter, r *http.Request) {
 	resp := DatasetResp{}
 	vars := mux.Vars(r)
@@ -26,13 +40,13 @@ func (h *Handler) syncDataset(w http.ResponseWriter, r *http.Request) {
 
 	user := db.GetUserByUsername(h.Database, username)
 	if user.ID == "" {
-		http.Error(w, "User not found", http.StatusNotFound)
+		h.sendErrorJSON(w, http.StatusNotFound, "User not found")
 		return
 	}
 
 	dataset := db.GetDatasetByUserIdAndSlug(h.Database, user.ID, datasetSlug)
 	if dataset.ID == "" {
-		http.Error(w, "Dataset not found", http.StatusNotFound)
+		h.sendErrorJSON(w, http.StatusNotFound, "Dataset not found")
 		return
 	}
 
@@ -130,7 +144,7 @@ func (h *Handler) syncDataset(w http.ResponseWriter, r *http.Request) {
 			// First look for the feature by UUID
 			snap, err := h.Firestore.Collection("features").Doc(u.String()).Get(r.Context())
 			if err != nil && status.Code(err) != codes.NotFound {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				h.sendErrorJSON(w, http.StatusInternalServerError, "Error fetching Firestore record")
 				return
 			}
 
@@ -142,7 +156,7 @@ func (h *Handler) syncDataset(w http.ResponseWriter, r *http.Request) {
 
 				_, err := h.Firestore.Collection("features").Doc(u.String()).Set(r.Context(), feature)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+					h.sendErrorJSON(w, http.StatusInternalServerError, err.Error())
 					return
 				}
 			}
@@ -163,6 +177,7 @@ func (h *Handler) syncDataset(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		h.Logger.Errorf("Error updating Firestore: %s", err)
+		h.sendErrorJSON(w, http.StatusInternalServerError, "Error updating Firestore")
 	}
 
 	w.WriteHeader(http.StatusOK)

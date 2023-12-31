@@ -13,6 +13,19 @@ import (
 	"github.com/mager/bluedot/db"
 )
 
+// downloadDatasetZip godoc
+//
+//	@Summary		Download a dataset as a zip file
+//	@Description	Download a dataset as a zip file
+//	@ID				download-dataset-zip
+//	@Tags			dataset
+//	@Produce		application/zip
+//	@Param			username	path	string	true	"Username"
+//	@Param			slug		path	string	true	"Slug"
+//	@Success		200
+//	@Failure		404	{object}	ErrorResp
+//	@Failure		500	{object}	ErrorResp
+//	@Router			/datasets/{username}/{slug}/zip [get]
 func (h *Handler) downloadDatasetZip(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	username := vars["username"]
@@ -20,13 +33,13 @@ func (h *Handler) downloadDatasetZip(w http.ResponseWriter, r *http.Request) {
 
 	user := db.GetUserByUsername(h.Database, username)
 	if user.ID == "" {
-		http.Error(w, "User not found", http.StatusNotFound)
+		h.sendErrorJSON(w, http.StatusNotFound, "User not found")
 		return
 	}
 
 	dataset := db.GetDatasetByUserIdAndSlug(h.Database, user.ID, datasetSlug)
 	if dataset.ID == "" {
-		http.Error(w, "Dataset not found", http.StatusNotFound)
+		h.sendErrorJSON(w, http.StatusNotFound, "Dataset not found")
 		return
 	}
 
@@ -37,6 +50,7 @@ func (h *Handler) downloadDatasetZip(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		h.Logger.Errorf("Error fetching contents: %s", err)
+		h.sendErrorJSON(w, http.StatusInternalServerError, err.Error())
 	}
 
 	filename := fmt.Sprintf("%s.zip", datasetSlug)
@@ -51,6 +65,7 @@ func (h *Handler) downloadDatasetZip(w http.ResponseWriter, r *http.Request) {
 	out, err := os.Create(filename)
 	if err != nil {
 		h.Logger.Errorf("Error creating file: %s", err)
+		h.sendErrorJSON(w, http.StatusInternalServerError, err.Error())
 	}
 
 	// Close the file
@@ -101,6 +116,7 @@ func (h *Handler) downloadDatasetZip(w http.ResponseWriter, r *http.Request) {
 	_, err = io.Copy(w, out)
 	if err != nil {
 		h.Logger.Errorf("Error writing file: %s", err)
+		h.sendErrorJSON(w, http.StatusInternalServerError, err.Error())
 	}
 
 	// Return the file

@@ -8,7 +8,20 @@ import (
 	"github.com/mager/bluedot/db"
 )
 
-// ServeHTTP handles an HTTP requests.
+// deleteDataset godoc
+//
+//	@Summary		Delete a dataset
+//	@Description	Delete a dataset
+//	@ID				delete-dataset
+//	@Tags			dataset
+//	@Accept			json
+//	@Produce		json
+//	@Param			username	path	string	true	"Username"
+//	@Param			slug		path	string	true	"Slug"
+//	@Success		200	{object}	DatasetResp
+//	@Failure		404	{object}	ErrorResp
+//	@Failure		500	{object}	ErrorResp
+//	@Router			/datasets/{username}/{slug} [delete]
 func (h *Handler) deleteDataset(w http.ResponseWriter, r *http.Request) {
 	resp := DatasetResp{}
 	vars := mux.Vars(r)
@@ -17,13 +30,13 @@ func (h *Handler) deleteDataset(w http.ResponseWriter, r *http.Request) {
 
 	user := db.GetUserByUsername(h.Database, username)
 	if user.ID == "" {
-		http.Error(w, "User not found", http.StatusNotFound)
+		h.sendErrorJSON(w, http.StatusNotFound, "User not found")
 		return
 	}
 
 	dataset := db.GetDatasetByUserIdAndSlug(h.Database, user.ID, datasetSlug)
 	if dataset.ID == "" {
-		http.Error(w, "Dataset not found", http.StatusNotFound)
+		h.sendErrorJSON(w, http.StatusNotFound, "Dataset not found")
 		return
 	}
 
@@ -33,7 +46,7 @@ func (h *Handler) deleteDataset(w http.ResponseWriter, r *http.Request) {
 	// Delete from Firestore
 	_, err := h.Firestore.Collection("datasets").Doc(dataset.ID).Delete(r.Context())
 	if err != nil {
-		http.Error(w, "Error deleting dataset from Firestore", http.StatusInternalServerError)
+		h.sendErrorJSON(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 

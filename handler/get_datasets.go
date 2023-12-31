@@ -10,7 +10,19 @@ import (
 	"github.com/mager/bluedot/db"
 )
 
-// ServeHTTP handles an HTTP requests.
+// getDatasets godoc
+//
+//	@Summary		Get all datasets for a user
+//	@Description	Fetch datasets from a given user
+//	@ID				get-datasets
+//	@Tags			dataset
+//	@Accept			json
+//	@Produce		json
+//	@Param			username	path	string	true	"Username"
+//	@Success		200	{object}	DatasetsResp
+//	@Failure		404	{object}	ErrorResp
+//	@Failure		500	{object}	ErrorResp
+//	@Router			/datasets/{username} [get]
 func (h *Handler) getDatasets(w http.ResponseWriter, r *http.Request) {
 	resp := DatasetsResp{}
 	vars := mux.Vars(r)
@@ -18,13 +30,13 @@ func (h *Handler) getDatasets(w http.ResponseWriter, r *http.Request) {
 
 	user := db.GetUserByUsername(h.Database, username)
 	if user.ID == "" {
-		http.Error(w, "User not found", http.StatusNotFound)
+		h.sendErrorJSON(w, http.StatusNotFound, "User not found")
 		return
 	}
 
 	datasets := db.GetDatasetsByUserId(h.Database, user.ID)
 	if len(datasets) == 0 {
-		http.Error(w, "No datasets found", http.StatusNotFound)
+		h.sendErrorJSON(w, http.StatusNotFound, "No datasets found")
 		return
 	}
 
@@ -50,7 +62,7 @@ func (h *Handler) getDatasets(w http.ResponseWriter, r *http.Request) {
 		docSnap, err := docRef.Get(context.Background())
 		if err != nil {
 			h.Logger.Errorf("Error fetching Firestore record: %s", err)
-			http.Error(w, "Error fetching Firestore record", http.StatusInternalServerError)
+			h.sendErrorJSON(w, http.StatussnringalServerError, "Error fetching Firestore record")
 			return
 		}
 		documents = append(documents, docSnap)

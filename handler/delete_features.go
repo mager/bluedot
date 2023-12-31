@@ -15,6 +15,21 @@ type DeleteFeaturesResp struct {
 	ID string `json:"id"`
 }
 
+// deleteFeatures godoc
+//
+//	@Summary		Delete features
+//	@Description	Delete features for a given dataset
+//	@ID				delete-features
+//	@Tags			dataset
+//	@Accept			json
+//	@Produce		json
+//	@Param			username	path	string				true	"Username"
+//	@Param			slug		path	string				true	"Slug"
+//	@Param 			request 	body 	DeleteFeaturesReq 	true 	"Delete Features Req"
+//	@Success		200	{object}	DatasetResp
+//	@Failure		404	{object}	ErrorResp
+//	@Failure		500	{object}	ErrorResp
+//	@Router			/datasets/{username}/{slug}/deleteFeatures [post]
 func (h *Handler) deleteFeatures(w http.ResponseWriter, r *http.Request) {
 	var req DeleteFeaturesReq
 	var resp DeleteFeaturesResp

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"database/sql"
+	"encoding/json"
 	"net/http"
 
 	"cloud.google.com/go/firestore"
@@ -56,6 +57,22 @@ func (h *Handler) registerRoutes() {
 	h.Router.HandleFunc("/datasets/{username}/{slug}", h.syncDataset).Methods("PUT")
 	h.Router.HandleFunc("/datasets/{username}/{slug}", h.deleteDataset).Methods("DELETE")
 	h.Router.HandleFunc("/datasets/{username}/{slug}/zip", h.downloadDatasetZip).Methods("GET")
+	h.Router.HandleFunc("/datasets/{username}/{slug}/deleteFeatures", h.deleteFeatures).Methods("POST")
+
+	// Deprecated
 	h.Router.HandleFunc("/datasets/saveFeatures", h.saveFeatures).Methods("POST")
-	h.Router.HandleFunc("/datasets/deleteFeatures", h.deleteFeatures).Methods("POST")
+}
+
+type ErrorResp struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+func (h *Handler) sendErrorJSON(w http.ResponseWriter, code int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(ErrorResp{
+		Code:    code,
+		Message: message,
+	})
 }

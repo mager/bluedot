@@ -26,3 +26,6 @@ deploy:
 
 ship:
 	make publish && make deploy
+
+openapi:
+	swag init  --parseDependency --parseInternal

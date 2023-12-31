@@ -10,6 +10,7 @@ import (
 )
 
 type DatasetResp struct {
+	Error       string `json:"error"`
 	ID          string `json:"id"`
 	UserID      string `json:"userId"`
 	Name        string `json:"name"`

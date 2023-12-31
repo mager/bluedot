@@ -22,25 +22,45 @@ import (
 	"go.uber.org/zap"
 )
 
+// @title Bluedot
+// @version 1.0
+// @description Primary backend for Geotory
+
+// @contact.name @mager
+// @contact.url https://geotory.com
+// @contact.email magerleagues@gmail.com
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host api.geotory.com
+// @BasePath /api
 func main() {
 	fx.New(
 		fx.Provide(
 			NewHTTPServer,
-			// fx.Annotate(
-			// 	handler.NewServeMux,
-			// 	fx.ParamTags(`group:"routes"`),
-			// ),
 			zap.NewProduction,
-			config.Options, db.Options, firestore.Options, github.Options, logger.Options, router.Options,
 
-			// AsRoute(handler.NewDatasetsHandler),
+			config.Options,
+			db.Options,
+			firestore.Options,
+			github.Options,
+			logger.Options,
+			router.Options,
 		),
 		fx.Invoke(Register),
 	).Run()
 
 }
 
-func Register(cfg config.Config, db *sql.DB, fs *fs.Client, gh *gh.Client, log *zap.SugaredLogger, router *mux.Router) {
+func Register(
+	cfg config.Config,
+	db *sql.DB,
+	fs *fs.Client,
+	gh *gh.Client,
+	log *zap.SugaredLogger,
+	router *mux.Router,
+) {
 	params := handler.Handler{
 		Config:    cfg,
 		Database:  db,
@@ -58,8 +78,6 @@ func Register(cfg config.Config, db *sql.DB, fs *fs.Client, gh *gh.Client, log *
 	handler.New(params)
 }
 
-// AsRoute annotates the given constructor to state that
-// it provides a route to the "routes" group.
 func AsRoute(f any) any {
 	return fx.Annotate(
 		f,
