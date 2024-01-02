@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 )
@@ -37,20 +38,7 @@ func (h *Handler) deleteFeatures(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var deletedFeatures []string
-	iter := h.Firestore.Collection("features").Where("dataset", "==", req.Dataset).Documents(r.Context())
-	for {
-		doc, err := iter.Next()
-		if err != nil {
-			break
-		}
-		deletedFeatures = append(deletedFeatures, doc.Ref.ID)
-		_, err = doc.Ref.Delete(r.Context())
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
+	deletedFeatures := h.deleteFeaturesController(r.Context(), req.Dataset)
 
 	h.Logger.Infow("Deleted features", "dataset", req.Dataset, "features", deletedFeatures)
 	resp.ID = req.Dataset
@@ -60,4 +48,21 @@ func (h *Handler) deleteFeatures(w http.ResponseWriter, r *http.Request) {
 	// Write the response
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(resp)
+}
+
+func (h *Handler) deleteFeaturesController(ctx context.Context, dataset string) []string {
+	var deletedFeatures []string
+	iter := h.Firestore.Collection("features").Where("dataset", "==", dataset).Documents(ctx)
+	for {
+		doc, err := iter.Next()
+		if err != nil {
+			break
+		}
+		deletedFeatures = append(deletedFeatures, doc.Ref.ID)
+		_, err = doc.Ref.Delete(ctx)
+		if err != nil {
+			h.Logger.Errorf("Error deleting feature: %s", err)
+		}
+	}
+	return deletedFeatures
 }

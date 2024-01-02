@@ -180,6 +180,11 @@ definitions:
           $ref: '#/definitions/handler.Datasets'
         type: array
     type: object
+  handler.DeleteDatasetResp:
+    properties:
+      id:
+        type: string
+    type: object
   handler.DeleteFeaturesReq:
     properties:
       dataset:
@@ -258,7 +263,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handler.DatasetResp'
+            $ref: '#/definitions/handler.DeleteDatasetResp'
         "404":
           description: Not Found
           schema:

@@ -208,7 +208,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handler.DatasetResp"
+                            "$ref": "#/definitions/handler.DeleteDatasetResp"
                         }
                     },
                     "404": {
@@ -596,6 +596,14 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/handler.Datasets"
                     }
+                }
+            }
+        },
+        "handler.DeleteDatasetResp": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
                 }
             }
         },
