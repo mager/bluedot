@@ -62,7 +62,7 @@ func (h *Handler) getDatasets(w http.ResponseWriter, r *http.Request) {
 		docSnap, err := docRef.Get(context.Background())
 		if err != nil {
 			h.Logger.Errorf("Error fetching Firestore record: %s", err)
-			h.sendErrorJSON(w, http.StatussnringalServerError, "Error fetching Firestore record")
+			h.sendErrorJSON(w, http.StatusInternalServerError, "Error fetching Firestore record")
 			return
 		}
 		documents = append(documents, docSnap)

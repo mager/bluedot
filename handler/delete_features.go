@@ -3,8 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
-
-	"github.com/k0kubun/pp"
 )
 
 type DeleteFeaturesReq struct {
@@ -54,8 +52,8 @@ func (h *Handler) deleteFeatures(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	pp.Print("Deleted features", "features", deletedFeatures)
-	resp.ID = "success"
+	h.Logger.Infow("Deleted features", "dataset", req.Dataset, "features", deletedFeatures)
+	resp.ID = req.Dataset
 
 	w.Header().Set("Content-Type", "application/json")
 
