@@ -46,7 +46,10 @@ const (
 type Dataset struct {
 	Image    string    `json:"image" firestore:"image"`
 	Source   string    `json:"source" firestore:"source"`
-	Features []Feature `json:"features" firestore:"features"`
+	Bbox     []float64 `json:"bbox" firestore:"bbox"`
+	Centroid []float64 `json:"centroid" firestore:"centroid"`
+	Types    []int     `json:"types" firestore:"types"`
+	Files    []string  `json:"files" firestore:"files"`
 }
 
 type Feature struct {

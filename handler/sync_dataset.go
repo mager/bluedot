@@ -11,11 +11,8 @@ import (
 
 	"github.com/google/go-github/v56/github"
 	"github.com/gorilla/mux"
-	"github.com/k0kubun/pp"
 	"github.com/mager/bluedot/db"
 	"github.com/mager/bluedot/firestore"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // syncDataset godoc
@@ -63,6 +60,7 @@ func (h *Handler) syncDataset(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var types []int
+	files := []string{}
 	record := map[string]interface{}{
 		"source": fmt.Sprintf("%s/%s/%s", owner, repo, path),
 		"types":  types,
@@ -88,86 +86,95 @@ func (h *Handler) syncDataset(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if f[len(f)-4:] == ".zip" {
-			zips = append(zips, file.GetDownloadURL())
+			files = append(files, file.GetDownloadURL())
 		}
 	}
+	record["files"] = files
 
 	h.Logger.Infow("Record", "record", record, "zips", zips)
 
 	// If there is a zip file, we need to parse through it and save features
-	if len(zips) == 1 {
-		fc := getGeoJSONFromZipURL(zips[0])
-		features := fc.Features
-
-		numPolygons := 0
-		numMultiPolygons := 0
-
-		for _, f := range features {
-			feature := firestore.Feature{}
-			geos := []firestore.Geometry{}
-			if f.Geometry.IsPolygon() {
-				feature.Type = firestore.FeatureTypePolygon
-				feat := f.Geometry.Polygon
-				geos = ProcessPolygons(geos, feat)
-				numPolygons++
-			}
-
-			if f.Geometry.IsMultiPolygon() {
-				feature.Type = firestore.FeatureTypeMultiPolygon
-				feat := f.Geometry.MultiPolygon
-				for _, mp := range feat {
-					geos = ProcessPolygons(geos, mp)
-				}
-
-				numMultiPolygons++
-			}
-
-			if f.Geometry.IsPoint() {
-				pp.Print("TODO: Handle Point")
-			}
-
-			if f.Geometry.IsMultiPoint() {
-				pp.Print("TODO: Handle MultiPoint")
-			}
-
-			if f.Geometry.IsLineString() {
-				pp.Print("TODO: Handle LineString")
-			}
-
-			if f.Geometry.IsMultiLineString() {
-				pp.Print("TODO: Handle MultiLineString")
-			}
-
-			// Look in the database to see if the signature exists
-			u := firestore.GetFeatureUUID(f)
-
-			// First look for the feature by UUID
-			snap, err := h.Firestore.Collection("features").Doc(u.String()).Get(r.Context())
-			if err != nil && status.Code(err) != codes.NotFound {
-				h.sendErrorJSON(w, http.StatusInternalServerError, "Error fetching Firestore record")
-				return
-			}
-
-			if !snap.Exists() {
-				feature.Dataset = dataset.ID
-				feature.Geometries = geos
-				feature.Name = GetPropertyName(f.Properties)
-				feature.Properties = f.Properties
-
-				_, err := h.Firestore.Collection("features").Doc(u.String()).Set(r.Context(), feature)
-				if err != nil {
-					h.sendErrorJSON(w, http.StatusInternalServerError, err.Error())
-					return
-				}
+	if len(files) == 1 {
+		for _, file := range files {
+			if strings.Contains(file, ".zip") {
+				fc := getGeoJSONFromZipURL(file)
+				record["bbox"] = h.calculateBoundingBox(fc)
+				record["centroid"] = h.calculateCentroid(fc)
 			}
 		}
-
-		numFeaturesNotProcessed := len(features) - numPolygons - numMultiPolygons
-		h.Logger.Infow("Features", "numPolygons", numPolygons, "numMultiPolygons", numMultiPolygons, "numFeaturesNotProcessed", numFeaturesNotProcessed)
-
-		record["bbox"] = h.calculateBoundingBox(fc)
-		record["centroid"] = h.calculateCentroid(fc)
 	}
+	// 	fc := getGeoJSONFromZipURL(zips[0])
+	// 	features := fc.Features
+
+	// 	numPolygons := 0
+	// 	numMultiPolygons := 0
+
+	// 	for _, f := range features {
+	// 		feature := firestore.Feature{}
+	// 		geos := []firestore.Geometry{}
+	// 		if f.Geometry.IsPolygon() {
+	// 			feature.Type = firestore.FeatureTypePolygon
+	// 			feat := f.Geometry.Polygon
+	// 			geos = ProcessPolygons(geos, feat)
+	// 			numPolygons++
+	// 		}
+
+	// 		if f.Geometry.IsMultiPolygon() {
+	// 			feature.Type = firestore.FeatureTypeMultiPolygon
+	// 			feat := f.Geometry.MultiPolygon
+	// 			for _, mp := range feat {
+	// 				geos = ProcessPolygons(geos, mp)
+	// 			}
+
+	// 			numMultiPolygons++
+	// 		}
+
+	// 		if f.Geometry.IsPoint() {
+	// 			pp.Print("TODO: Handle Point")
+	// 		}
+
+	// 		if f.Geometry.IsMultiPoint() {
+	// 			pp.Print("TODO: Handle MultiPoint")
+	// 		}
+
+	// 		if f.Geometry.IsLineString() {
+	// 			pp.Print("TODO: Handle LineString")
+	// 		}
+
+	// 		if f.Geometry.IsMultiLineString() {
+	// 			pp.Print("TODO: Handle MultiLineString")
+	// 		}
+
+	// 		// Look in the database to see if the signature exists
+	// 		u := firestore.GetFeatureUUID(f)
+
+	// 		// First look for the feature by UUID
+	// 		snap, err := h.Firestore.Collection("features").Doc(u.String()).Get(r.Context())
+	// 		if err != nil && status.Code(err) != codes.NotFound {
+	// 			h.sendErrorJSON(w, http.StatusInternalServerError, "Error fetching Firestore record")
+	// 			return
+	// 		}
+
+	// 		if !snap.Exists() {
+	// 			feature.Dataset = dataset.ID
+	// 			feature.Geometries = geos
+	// 			feature.Name = GetPropertyName(f.Properties)
+	// 			feature.Properties = f.Properties
+
+	// 			_, err := h.Firestore.Collection("features").Doc(u.String()).Set(r.Context(), feature)
+	// 			if err != nil {
+	// 				h.sendErrorJSON(w, http.StatusInternalServerError, err.Error())
+	// 				return
+	// 			}
+	// 		}
+	// 	}
+
+	// 	numFeaturesNotProcessed := len(features) - numPolygons - numMultiPolygons
+	// 	h.Logger.Infow("Features", "numPolygons", numPolygons, "numMultiPolygons", numMultiPolygons, "numFeaturesNotProcessed", numFeaturesNotProcessed)
+
+	// 	record["bbox"] = h.calculateBoundingBox(fc)
+	// 	record["centroid"] = h.calculateCentroid(fc)
+	// }
 
 	// Create or update a record in Firestore
 	h.Logger.Infof("Dataset ID: %s", dataset.ID)

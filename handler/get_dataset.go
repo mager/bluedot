@@ -73,66 +73,54 @@ func (h *Handler) getDataset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	img, ok := doc.Data()["image"].(string)
-	if ok {
-		resp.Image = img
-	}
-
-	types, ok := doc.Data()["types"].([]interface{})
-	if !ok {
-		resp.Types = []DatasetType{}
-	} else {
-		for _, t := range types {
-			resp.Types = append(resp.Types, DatasetType{
-				Name: fs.DatasetTypeValueToName(int(t.(int64))),
-			})
-		}
-	}
-
-	centroid, ok := doc.Data()["centroid"].([]interface{})
-	if ok {
-		resp.Centroid = []float64{}
-		for _, c := range centroid {
-			resp.Centroid = append(resp.Centroid, c.(float64))
-		}
-	}
-
-	bbox, ok := doc.Data()["bbox"].([]interface{})
-	if ok {
-		resp.Bbox = []float64{}
-		for _, b := range bbox {
-			resp.Bbox = append(resp.Bbox, b.(float64))
-		}
-	}
-
-	// Get features from Firestore
-	feats := []*geojson.Feature{}
-	features, err := h.Firestore.Collection("features").Where("dataset", "==", resp.ID).Documents(context.Background()).GetAll()
+	ds := fs.Dataset{}
+	err = doc.DataTo(&ds)
 	if err != nil {
-		h.Logger.Errorf("Error fetching features from Firestore: %s", err)
-		h.sendErrorJSON(w, http.StatusInternalServerError, "Error fetching features from Firestore")
+		h.Logger.Errorf("Error converting Firestore data to struct: %s", err)
+		h.sendErrorJSON(w, http.StatusInternalServerError, "Error converting Firestore data to struct")
 		return
 	}
-	for _, f := range features {
-		featStruct := fs.Feature{}
-		err := f.DataTo(&featStruct)
-		if err != nil {
-			h.Logger.Errorf("Error converting Firestore data to struct: %s", err)
-			h.sendErrorJSON(w, http.StatusInternalServerError, "Error converting Firestore data to struct")
-			return
-		}
-
-		feature := geojson.Feature{}
-		feature.ID = f.Ref.ID
-		feature.Type = getFeatureType(featStruct.Type)
-		feature.Geometry = getGeometry(featStruct)
-		feature.Properties = f.Data()["properties"].(map[string]interface{})
-		feats = append(feats, &feature)
+	resp.Image = ds.Image
+	for _, t := range ds.Types {
+		resp.Types = append(resp.Types, DatasetType{
+			Name: fs.DatasetTypeValueToName(t),
+		})
 	}
+	resp.Centroid = ds.Centroid
+	resp.Bbox = ds.Bbox
 
-	fc := geojson.NewFeatureCollection()
-	fc.Features = feats
-	resp.Geojson = fc
+	// Deprecated: Get features from Firestore
+	// feats := []*geojson.Feature{}
+	// features, err := h.Firestore.Collection("features").Where("dataset", "==", resp.ID).Documents(context.Background()).GetAll()
+	// if err != nil {
+	// 	h.Logger.Errorf("Error fetching features from Firestore: %s", err)
+	// 	h.sendErrorJSON(w, http.StatusInternalServerError, "Error fetching features from Firestore")
+	// 	return
+	// }
+	// for _, f := range features {
+	// 	featStruct := fs.Feature{}
+	// 	err := f.DataTo(&featStruct)
+	// 	if err != nil {
+	// 		h.Logger.Errorf("Error converting Firestore data to struct: %s", err)
+	// 		h.sendErrorJSON(w, http.StatusInternalServerError, "Error converting Firestore data to struct")
+	// 		return
+	// 	}
+
+	// 	feature := geojson.Feature{}
+	// 	feature.ID = f.Ref.ID
+	// 	feature.Type = getFeatureType(featStruct.Type)
+	// 	feature.Geometry = getGeometry(featStruct)
+	// 	feature.Properties = f.Data()["properties"].(map[string]interface{})
+	// 	feats = append(feats, &feature)
+	// }
+
+	// Get GeoJSON from Ptolemy
+
+	if len(ds.Files) == 1 {
+		file := ds.Files[0]
+		fc := getGeoJSONFromZipURL(file)
+		resp.Geojson = fc
+	}
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(resp)
