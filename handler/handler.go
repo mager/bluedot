@@ -60,7 +60,6 @@ func (h *Handler) registerRoutes() {
 	h.Router.HandleFunc("/datasets/{username}/{slug}/deleteFeatures", h.deleteFeatures).Methods("POST")
 
 	// Deprecated
-	h.Router.HandleFunc("/datasets/saveFeatures", h.saveFeatures).Methods("POST")
 }
 
 type ErrorResp struct {

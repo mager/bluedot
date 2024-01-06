@@ -30,6 +30,7 @@ type DatasetResp struct {
 
 	Geojson  *geojson.FeatureCollection `json:"geojson"`
 	Centroid []float64                  `json:"centroid"`
+	Zoom     int                        `json:"zoom"`
 	Bbox     []float64                  `json:"bbox"`
 }
 

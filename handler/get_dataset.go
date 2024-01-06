@@ -86,40 +86,13 @@ func (h *Handler) getDataset(w http.ResponseWriter, r *http.Request) {
 			Name: fs.DatasetTypeValueToName(t),
 		})
 	}
-	resp.Centroid = ds.Centroid
-	resp.Bbox = ds.Bbox
-
-	// Deprecated: Get features from Firestore
-	// feats := []*geojson.Feature{}
-	// features, err := h.Firestore.Collection("features").Where("dataset", "==", resp.ID).Documents(context.Background()).GetAll()
-	// if err != nil {
-	// 	h.Logger.Errorf("Error fetching features from Firestore: %s", err)
-	// 	h.sendErrorJSON(w, http.StatusInternalServerError, "Error fetching features from Firestore")
-	// 	return
-	// }
-	// for _, f := range features {
-	// 	featStruct := fs.Feature{}
-	// 	err := f.DataTo(&featStruct)
-	// 	if err != nil {
-	// 		h.Logger.Errorf("Error converting Firestore data to struct: %s", err)
-	// 		h.sendErrorJSON(w, http.StatusInternalServerError, "Error converting Firestore data to struct")
-	// 		return
-	// 	}
-
-	// 	feature := geojson.Feature{}
-	// 	feature.ID = f.Ref.ID
-	// 	feature.Type = getFeatureType(featStruct.Type)
-	// 	feature.Geometry = getGeometry(featStruct)
-	// 	feature.Properties = f.Data()["properties"].(map[string]interface{})
-	// 	feats = append(feats, &feature)
-	// }
-
-	// Get GeoJSON from Ptolemy
 
 	if len(ds.Files) == 1 {
 		file := ds.Files[0]
-		fc := getGeoJSONFromZipURL(file)
-		resp.Geojson = fc
+		geoJSONResp := getGeoJSONFromZipURLV2(file)
+		resp.Geojson = geoJSONResp.GeoJSON
+		resp.Centroid = geoJSONResp.Context.Centroid
+		resp.Zoom = geoJSONResp.Context.Zoom
 	}
 
 	w.WriteHeader(http.StatusOK)

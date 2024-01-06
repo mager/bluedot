@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/mager/bluedot/db"
 	"github.com/mager/bluedot/firestore"
+	geojson "github.com/paulmach/go.geojson"
 )
 
 // syncDataset godoc
@@ -93,89 +96,6 @@ func (h *Handler) syncDataset(w http.ResponseWriter, r *http.Request) {
 
 	h.Logger.Infow("Record", "record", record, "zips", zips)
 
-	// If there is a zip file, we need to parse through it and save features
-	if len(files) == 1 {
-		for _, file := range files {
-			if strings.Contains(file, ".zip") {
-				fc := getGeoJSONFromZipURL(file)
-				record["bbox"] = h.calculateBoundingBox(fc)
-				record["centroid"] = h.calculateCentroid(fc)
-			}
-		}
-	}
-	// 	fc := getGeoJSONFromZipURL(zips[0])
-	// 	features := fc.Features
-
-	// 	numPolygons := 0
-	// 	numMultiPolygons := 0
-
-	// 	for _, f := range features {
-	// 		feature := firestore.Feature{}
-	// 		geos := []firestore.Geometry{}
-	// 		if f.Geometry.IsPolygon() {
-	// 			feature.Type = firestore.FeatureTypePolygon
-	// 			feat := f.Geometry.Polygon
-	// 			geos = ProcessPolygons(geos, feat)
-	// 			numPolygons++
-	// 		}
-
-	// 		if f.Geometry.IsMultiPolygon() {
-	// 			feature.Type = firestore.FeatureTypeMultiPolygon
-	// 			feat := f.Geometry.MultiPolygon
-	// 			for _, mp := range feat {
-	// 				geos = ProcessPolygons(geos, mp)
-	// 			}
-
-	// 			numMultiPolygons++
-	// 		}
-
-	// 		if f.Geometry.IsPoint() {
-	// 			pp.Print("TODO: Handle Point")
-	// 		}
-
-	// 		if f.Geometry.IsMultiPoint() {
-	// 			pp.Print("TODO: Handle MultiPoint")
-	// 		}
-
-	// 		if f.Geometry.IsLineString() {
-	// 			pp.Print("TODO: Handle LineString")
-	// 		}
-
-	// 		if f.Geometry.IsMultiLineString() {
-	// 			pp.Print("TODO: Handle MultiLineString")
-	// 		}
-
-	// 		// Look in the database to see if the signature exists
-	// 		u := firestore.GetFeatureUUID(f)
-
-	// 		// First look for the feature by UUID
-	// 		snap, err := h.Firestore.Collection("features").Doc(u.String()).Get(r.Context())
-	// 		if err != nil && status.Code(err) != codes.NotFound {
-	// 			h.sendErrorJSON(w, http.StatusInternalServerError, "Error fetching Firestore record")
-	// 			return
-	// 		}
-
-	// 		if !snap.Exists() {
-	// 			feature.Dataset = dataset.ID
-	// 			feature.Geometries = geos
-	// 			feature.Name = GetPropertyName(f.Properties)
-	// 			feature.Properties = f.Properties
-
-	// 			_, err := h.Firestore.Collection("features").Doc(u.String()).Set(r.Context(), feature)
-	// 			if err != nil {
-	// 				h.sendErrorJSON(w, http.StatusInternalServerError, err.Error())
-	// 				return
-	// 			}
-	// 		}
-	// 	}
-
-	// 	numFeaturesNotProcessed := len(features) - numPolygons - numMultiPolygons
-	// 	h.Logger.Infow("Features", "numPolygons", numPolygons, "numMultiPolygons", numMultiPolygons, "numFeaturesNotProcessed", numFeaturesNotProcessed)
-
-	// 	record["bbox"] = h.calculateBoundingBox(fc)
-	// 	record["centroid"] = h.calculateCentroid(fc)
-	// }
-
 	// Create or update a record in Firestore
 	h.Logger.Infof("Dataset ID: %s", dataset.ID)
 	_, err = h.Firestore.Collection("datasets").
@@ -200,4 +120,90 @@ func parseGithubSource(source string) (string, string, string) {
 	path := strings.Split(source, "/")[2]
 
 	return owner, repo, path
+}
+
+type PtolemyGeojsonReq struct {
+	URL     string                `json:"url"`
+	From    string                `json:"from"`
+	Options PtolemyGeojsonOptions `json:"options"`
+}
+
+type PtolemyGeojsonResp struct {
+	GeoJSON *geojson.FeatureCollection `json:"geojson"`
+	Context PtolemyGeojsonRespContext  `json:"context"`
+}
+
+type PtolemyGeojsonRespContext struct {
+	Centroid []float64 `json:"centroid"`
+	Zoom     int       `json:"zoom"`
+}
+
+type PtolemyGeojsonOptions struct {
+	Simplify PtolemyGeojsonOptionsSimplify `json:"simplify"`
+}
+
+type PtolemyGeojsonOptionsSimplify struct {
+	Tolerance float64 `json:"tolerance"`
+}
+
+func getGeoJSONFromZipURLV2(url string) *PtolemyGeojsonResp {
+	ptolemyURL := "https://ptolemy-zhokjvjava-uc.a.run.app/api/geojson"
+	PtolemyGeojsonReqBody := PtolemyGeojsonReq{
+		URL:  url,
+		From: "shapefile",
+		Options: PtolemyGeojsonOptions{
+			Simplify: PtolemyGeojsonOptionsSimplify{
+				Tolerance: 0.05,
+			},
+		},
+	}
+
+	// Convert the request body to JSON
+	ptolemyReqBody, err := json.Marshal(PtolemyGeojsonReqBody)
+	if err != nil {
+		panic(err)
+	}
+
+	reqBody := bytes.NewBuffer(ptolemyReqBody)
+	ptolemyResp, err := http.Post(ptolemyURL, "application/json", reqBody)
+	if err != nil {
+		panic(err)
+	}
+
+	// Close the response body
+	defer ptolemyResp.Body.Close()
+
+	// If not 200, return an error
+	if ptolemyResp.StatusCode != http.StatusOK {
+		// Print the response body
+		body, err := io.ReadAll(ptolemyResp.Body)
+		if err != nil {
+			panic(err)
+		}
+		panic(string(body))
+	}
+
+	body, err := io.ReadAll(ptolemyResp.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	type PtolemyGeojsonRespErr struct {
+		Status  string `json:"status"`
+		Message string `json:"message"`
+	}
+
+	var ptolemyGeojsonRespErr PtolemyGeojsonRespErr
+	err = json.Unmarshal(body, &ptolemyGeojsonRespErr)
+	if err != nil {
+		panic(err)
+	}
+
+	var ptolemyGeojsonResp PtolemyGeojsonResp
+	err = json.Unmarshal(body, &ptolemyGeojsonResp)
+	if err != nil {
+		panic(err)
+	}
+
+	return &ptolemyGeojsonResp
 }

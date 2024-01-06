@@ -307,21 +307,6 @@ func (h *Handler) calculateCentroid(fc *geojson.FeatureCollection) [2]float64 {
 
 	return centroid
 }
-
-type PtolemyGeojsonReq struct {
-	URL     string                `json:"url"`
-	From    string                `json:"from"`
-	Options PtolemyGeojsonOptions `json:"options"`
-}
-
-type PtolemyGeojsonOptions struct {
-	Simplify PtolemyGeojsonOptionsSimplify `json:"simplify"`
-}
-
-type PtolemyGeojsonOptionsSimplify struct {
-	Tolerance float64 `json:"tolerance"`
-}
-
 func getGeoJSONFromZipURL(url string) *geojson.FeatureCollection {
 	ptolemyURL := "https://ptolemy-zhokjvjava-uc.a.run.app/api/geojson"
 	PtolemyGeojsonReqBody := PtolemyGeojsonReq{
