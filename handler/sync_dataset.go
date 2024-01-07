@@ -153,7 +153,7 @@ func getGeoJSONFromZipURLV2(url string) *PtolemyGeojsonResp {
 		From: "shapefile",
 		Options: PtolemyGeojsonOptions{
 			Simplify: PtolemyGeojsonOptionsSimplify{
-				Tolerance: 0.05,
+				Tolerance: 0.01,
 			},
 		},
 	}
