@@ -7,6 +7,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/google/uuid"
+
 	geojson "github.com/paulmach/go.geojson"
 )
 

@@ -207,3 +207,48 @@ func getGeoJSONFromZipURLV2(url string) *PtolemyGeojsonResp {
 
 	return &ptolemyGeojsonResp
 }
+
+func getGeoJSONFromZipURLV3(url string) []byte {
+	ptolemyURL := "https://ptolemy-zhokjvjava-uc.a.run.app/api/geojson"
+	PtolemyGeojsonReqBody := PtolemyGeojsonReq{
+		URL:  url,
+		From: "shapefile",
+		Options: PtolemyGeojsonOptions{
+			Simplify: PtolemyGeojsonOptionsSimplify{
+				Tolerance: 0.05,
+			},
+		},
+	}
+
+	// Convert the request body to JSON
+	ptolemyReqBody, err := json.Marshal(PtolemyGeojsonReqBody)
+	if err != nil {
+		panic(err)
+	}
+
+	reqBody := bytes.NewBuffer(ptolemyReqBody)
+	ptolemyResp, err := http.Post(ptolemyURL, "application/json", reqBody)
+	if err != nil {
+		panic(err)
+	}
+
+	// Close the response body
+	defer ptolemyResp.Body.Close()
+
+	// If not 200, return an error
+	if ptolemyResp.StatusCode != http.StatusOK {
+		// Print the response body
+		body, err := io.ReadAll(ptolemyResp.Body)
+		if err != nil {
+			panic(err)
+		}
+		panic(string(body))
+	}
+
+	body, err := io.ReadAll(ptolemyResp.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	return body
+}

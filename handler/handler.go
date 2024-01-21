@@ -59,6 +59,7 @@ func (h *Handler) registerRoutes() {
 	h.Router.HandleFunc("/datasets/{username}/{slug}/zip", h.downloadDatasetZip).Methods("GET")
 	h.Router.HandleFunc("/datasets/{username}/{slug}/deleteFeatures", h.deleteFeatures).Methods("POST")
 
+	h.Router.HandleFunc("/datasets/{username}/{slug}/geojson", h.storeGeoJSON).Methods("POST")
 	// Deprecated
 }
 
