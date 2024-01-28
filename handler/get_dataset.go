@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/mager/bluedot/db"
 	fs "github.com/mager/bluedot/firestore"
+	"github.com/mager/bluedot/storage"
 	geojson "github.com/paulmach/go.geojson"
 )
 
@@ -87,13 +88,12 @@ func (h *Handler) getDataset(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	if len(ds.Files) == 1 {
-		file := ds.Files[0]
-		geoJSONResp := getGeoJSONFromZipURLV2(file)
-		resp.Geojson = geoJSONResp.GeoJSON
-		resp.Centroid = geoJSONResp.Context.Centroid
-		resp.Zoom = geoJSONResp.Context.Zoom
-	}
+	// Get the geojson from Cloud Storage
+	filename := username + "/" + datasetSlug + ".json"
+	geojsonRespBody := h.GetGeoJSON(w, filename)
+	resp.Centroid = geojsonRespBody.Context.Centroid
+	resp.Zoom = geojsonRespBody.Context.Zoom
+	resp.Geojson = geojsonRespBody.GeoJSON
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(resp)
@@ -189,4 +189,23 @@ func getGeometry(feat fs.Feature) *geojson.Geometry {
 	}
 
 	return geometry
+}
+
+func (h *Handler) GetGeoJSON(w http.ResponseWriter, filename string) storage.GeoJSONResp {
+	csHost := "https://storage.googleapis.com/geotory-coldline/"
+	geojsonURL := csHost + filename
+	geojsonResp, err := http.Get(geojsonURL)
+	if err != nil {
+		h.Logger.Errorf("Error fetching geojson: %s", err)
+	}
+	defer geojsonResp.Body.Close()
+
+	// Set the geojsonResp to the response
+	var geojsonRespBody storage.GeoJSONResp
+	err = json.NewDecoder(geojsonResp.Body).Decode(&geojsonRespBody)
+	if err != nil {
+		h.Logger.Errorf("Error decoding geojson: %s", err)
+	}
+
+	return geojsonRespBody
 }

@@ -4,18 +4,24 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/mager/bluedot/db"
 	fs "github.com/mager/bluedot/firestore"
+	"github.com/mager/bluedot/storage"
 )
 
 type StoreGeoJSONResp struct {
-	Success  bool   `json:"success"`
-	Filename string `json:"filename"`
+	Success bool `json:"success"`
 }
 
 func (h *Handler) storeGeoJSON(w http.ResponseWriter, r *http.Request) {
+	h.Logger.Infof("Storing geojson file")
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+
 	resp := StoreGeoJSONResp{}
 	vars := mux.Vars(r)
 	username := vars["username"]
@@ -58,37 +64,17 @@ func (h *Handler) storeGeoJSON(w http.ResponseWriter, r *http.Request) {
 	geojsonBytes := getGeoJSONFromZipURLV3(file)
 
 	// Save the geojson as a file to Cloud Storage
-	bkt := h.Storage.Bucket("geotory-magertest")
 	filename := username + "/" + datasetSlug
-	obj := bkt.Object(filename + ".json")
-	ow := obj.NewWriter(context.Background())
-	ow.ContentType = "application/json"
-	ow.ObjectAttrs.ContentEncoding = "gzip"
-	ow.ObjectAttrs.ContentType = "application/json"
-	ow.ObjectAttrs.CacheControl = "public, max-age=86400"
-
-	_, err = ow.Write(geojsonBytes)
+	h.Logger.Infof("Storing geojson bucket & file: %s %s", storage.GetBucket(), filename)
+	err = storage.StoreObject(ctx, h.Storage, storage.GetBucket(), filename, geojsonBytes)
 	if err != nil {
-		h.Logger.Errorf("Error writing to Cloud Storage: %s", err)
-		h.sendErrorJSON(w, http.StatusInternalServerError, "Error writing to Cloud Storage")
+		h.Logger.Errorf("Error storing object in Cloud Storage: %s", err)
+		h.sendErrorJSON(w, http.StatusInternalServerError, "Error storing object in Cloud Storage")
 		return
 	}
 
-	err = ow.Close()
-	if err != nil {
-		h.Logger.Errorf("Error closing Cloud Storage writer: %s", err)
-		h.sendErrorJSON(w, http.StatusInternalServerError, "Error closing Cloud Storage writer")
-		return
-	}
-
-	if err != nil {
-		h.Logger.Errorf("Error updating Firestore: %s", err)
-		h.sendErrorJSON(w, http.StatusInternalServerError, "Error updating Firestore")
-		return
-	}
-
-	resp.Filename = filename
 	resp.Success = true
+	h.Logger.Infof("Successfully stored geojson file: %s", filename)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(resp)
 }
