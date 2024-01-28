@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"cloud.google.com/go/firestore"
+	"cloud.google.com/go/storage"
 	"github.com/google/go-github/v56/github"
 	"github.com/gorilla/mux"
 	"github.com/mager/bluedot/config"
@@ -42,6 +43,7 @@ type Handler struct {
 	HttpClient *http.Client
 	Logger     *zap.SugaredLogger
 	Router     *mux.Router
+	Storage    *storage.Client
 }
 
 // New creates a Handler struct

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -10,7 +11,8 @@ import (
 )
 
 type StoreGeoJSONResp struct {
-	Success bool `json:"success"`
+	Success  bool   `json:"success"`
+	Filename string `json:"filename"`
 }
 
 func (h *Handler) storeGeoJSON(w http.ResponseWriter, r *http.Request) {
@@ -54,8 +56,39 @@ func (h *Handler) storeGeoJSON(w http.ResponseWriter, r *http.Request) {
 
 	file := ds.Files[0]
 	geojsonBytes := getGeoJSONFromZipURLV3(file)
-	h.Logger.Infof("GeoJSON: %s", geojsonBytes)
 
+	// Save the geojson as a file to Cloud Storage
+	bkt := h.Storage.Bucket("geotory-magertest")
+	filename := username + "/" + datasetSlug
+	obj := bkt.Object(filename + ".json")
+	ow := obj.NewWriter(context.Background())
+	ow.ContentType = "application/json"
+	ow.ObjectAttrs.ContentEncoding = "gzip"
+	ow.ObjectAttrs.ContentType = "application/json"
+	ow.ObjectAttrs.CacheControl = "public, max-age=86400"
+
+	_, err = ow.Write(geojsonBytes)
+	if err != nil {
+		h.Logger.Errorf("Error writing to Cloud Storage: %s", err)
+		h.sendErrorJSON(w, http.StatusInternalServerError, "Error writing to Cloud Storage")
+		return
+	}
+
+	err = ow.Close()
+	if err != nil {
+		h.Logger.Errorf("Error closing Cloud Storage writer: %s", err)
+		h.sendErrorJSON(w, http.StatusInternalServerError, "Error closing Cloud Storage writer")
+		return
+	}
+
+	if err != nil {
+		h.Logger.Errorf("Error updating Firestore: %s", err)
+		h.sendErrorJSON(w, http.StatusInternalServerError, "Error updating Firestore")
+		return
+	}
+
+	resp.Filename = filename
 	resp.Success = true
-
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(resp)
 }

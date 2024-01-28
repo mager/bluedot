@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	fs "cloud.google.com/go/firestore"
+	"cloud.google.com/go/storage"
 	gh "github.com/google/go-github/v56/github"
 	"github.com/gorilla/mux"
 	"github.com/mager/bluedot/config"
@@ -17,6 +18,7 @@ import (
 	"github.com/mager/bluedot/handler"
 	"github.com/mager/bluedot/logger"
 	"github.com/mager/bluedot/router"
+	stor "github.com/mager/bluedot/storage"
 
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -47,6 +49,7 @@ func main() {
 			github.Options,
 			logger.Options,
 			router.Options,
+			stor.Options,
 		),
 		fx.Invoke(Register),
 	).Run()
@@ -60,6 +63,7 @@ func Register(
 	gh *gh.Client,
 	log *zap.SugaredLogger,
 	router *mux.Router,
+	cs *storage.Client,
 ) {
 	params := handler.Handler{
 		Config:    cfg,
@@ -71,8 +75,9 @@ func Register(
 				MaxIdleConnsPerHost: 100,
 			},
 		},
-		Logger: log,
-		Router: router,
+		Logger:  log,
+		Router:  router,
+		Storage: cs,
 	}
 
 	handler.New(params)
